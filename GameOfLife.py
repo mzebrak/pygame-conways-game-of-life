@@ -7,7 +7,7 @@ import pygame
 class GameOfLife:
 
     def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=5, dead_color=(255, 255, 255),
-                 alive_color=(0, 0, 0), max_fps=30):
+                 alive_color=(0, 0, 0), max_fps=10):
         """
         Initialize screen, initialize grid, set game settings,
 
@@ -20,16 +20,17 @@ class GameOfLife:
         :param max_fps: Framerate cap to limit the speed of the game
         """
         pygame.init()
+        favicon = pygame.image.load('favicon.ico')
+        pygame.display.set_icon(favicon)
         pygame.display.set_caption('conway\'s game of life')
 
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.menu_bar_height = menu_height
-        self.cell_size = cell_size
-
+        self.cell_size = 1 if cell_size < 1 else cell_size
         self.dead_color = dead_color
         self.alive_color = alive_color
-        self.max_fps = max_fps
+        self.max_fps = 1 if max_fps < 1 else max_fps
 
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
@@ -42,10 +43,13 @@ class GameOfLife:
         self.active_grid = 0
         self.set_grid()
 
+        self.generation = 0
+        self.alive_cells = 0
+
         self.paused = False
         self.exit = False
 
-        self.screen.fill(self.dead_color)
+        self.clear_screen()
         pygame.display.flip()
 
     def set_grid(self, value=None):
@@ -65,9 +69,11 @@ class GameOfLife:
         """
         Draw the cells from active grid on the screen
         """
+        self.alive_cells = 0
         for c in range(self.num_of_cols):
             for r in range(self.num_of_rows):
                 if self.grids[self.active_grid][c][r] == 1:
+                    self.alive_cells += 1
                     color = self.alive_color
                 else:
                     color = self.dead_color
@@ -122,14 +128,55 @@ class GameOfLife:
         Swaps the active and inactive grid
         """
         self.active_grid = self.get_inactive_grid()
+        self.generation += 1
+
+    def display_info(self):
+        """
+        Displaying information about generation and alive cells in the bottom
+        """
+        print(f'Generation: {self.generation}')
+        print(f'Alive cells: {self.alive_cells}')
+
+        div = 1
+
+        while True:
+            font = pygame.font.SysFont("Arial", int(self.menu_bar_height / div))
+
+            text1 = font.render(f'Generation: {self.generation}', True, (0, 0, 0), (255, 255, 255))
+            text2 = font.render(f'Alive cells: {self.alive_cells}', True, (0, 0, 0), (255, 255, 255))
+
+            text1_rect = text1.get_rect()
+            text2_rect = text2.get_rect()
+
+            div += 1
+
+            if self.screen_width > text1_rect.width + text2_rect.width:
+                break
+
+        text1_rect.topleft = (0, self.screen_height - self.menu_bar_height)
+        text2_rect.topleft = (self.screen_width - text2_rect.width, self.screen_height - self.menu_bar_height)
+
+        pygame.draw.rect(self.screen, self.dead_color,
+                         (0, self.screen_height - self.menu_bar_height, self.screen_width, self.menu_bar_height))
+        self.screen.blit(text1, text1_rect)
+        self.screen.blit(text2, text2_rect)
+        pygame.display.flip()
+
+    def clear_screen(self):
+        """
+        Fill the entire screen with dead_color
+        """
+        self.screen.fill(self.dead_color)
 
     def handle_events(self):
         """
         Handle key presses
 
-        s - toggle start/stop (pause) the game
-        q - quit
+        p - toggle start/stop (pause) the game
         r - randomize grid
+        n - display next generation
+        c - clear grid
+        q - quit
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -143,8 +190,27 @@ class GameOfLife:
                     self.exit = True
                 elif event.key == pygame.K_r:
                     print("'r' pressed! - randomizing grid")
+                    self.generation = 0
+                    self.alive_cells = 0
+                    self.display_info()
                     self.set_grid()
                     self.draw_grid()
+                elif self.paused and event.key == pygame.K_n:
+                    print("'n' pressed! - displaying next generation")
+                    self.next_generation()
+                elif self.paused and event.key == pygame.K_c:
+                    print("'c' pressed! - clearing active grid")
+                    self.generation = 0
+                    self.alive_cells = 0
+                    self.display_info()
+                    self.set_grid(0)
+                    self.draw_grid()
+
+    def next_generation(self):
+        self.draw_grid()
+        self.set_cells_state()
+        self.update_generation()
+        self.display_info()
 
     def run(self):
         """
@@ -157,12 +223,6 @@ class GameOfLife:
             self.handle_events()
 
             if not self.paused:
-                self.draw_grid()
-                self.set_cells_state()
-                self.update_generation()
+                self.next_generation();
 
             pygame.time.Clock().tick(self.max_fps)
-
-
-if __name__ == "__main__":
-    GameOfLife().run()
