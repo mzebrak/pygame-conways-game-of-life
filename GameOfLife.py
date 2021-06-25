@@ -7,9 +7,9 @@ import pygame
 class GameOfLife:
 
     def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=5, dead_color=(255, 255, 255),
-                 alive_color=(0, 0, 0), max_fps=10):
+                 alive_color=(0, 0, 0), max_fps=20):
         """
-        Initialize screen, initialize grid, set game settings,
+        Initialize screen, initialize grid, set game settings, draw first frame
 
         :param screen_width: Game window width
         :param screen_height: Game window height
@@ -49,8 +49,9 @@ class GameOfLife:
         self.paused = False
         self.exit = False
 
-        self.clear_screen()
-        pygame.display.flip()
+        self.draw_grid()
+        self.display_info()
+        pygame.time.Clock().tick(self.max_fps)
 
     def set_grid(self, value=None):
         """
@@ -125,8 +126,9 @@ class GameOfLife:
 
     def update_generation(self):
         """
-        Swaps the active and inactive grid
+        Calls function which set the state of every cell then swaps the active and inactive grid and increments generation counter
         """
+        self.set_cells_state()
         self.active_grid = self.get_inactive_grid()
         self.generation += 1
 
@@ -192,25 +194,21 @@ class GameOfLife:
                     print("'r' pressed! - randomizing grid")
                     self.generation = 0
                     self.alive_cells = 0
-                    self.display_info()
                     self.set_grid()
                     self.draw_grid()
+                    self.display_info()
                 elif self.paused and event.key == pygame.K_n:
                     print("'n' pressed! - displaying next generation")
-                    self.next_generation()
+                    self.update_generation()
+                    self.draw_grid()
+                    self.display_info()
                 elif self.paused and event.key == pygame.K_c:
                     print("'c' pressed! - clearing active grid")
                     self.generation = 0
                     self.alive_cells = 0
-                    self.display_info()
                     self.set_grid(0)
                     self.draw_grid()
-
-    def next_generation(self):
-        self.draw_grid()
-        self.set_cells_state()
-        self.update_generation()
-        self.display_info()
+                    self.display_info()
 
     def run(self):
         """
@@ -223,6 +221,8 @@ class GameOfLife:
             self.handle_events()
 
             if not self.paused:
-                self.next_generation();
+                self.update_generation()
+                self.draw_grid()
+                self.display_info()
 
             pygame.time.Clock().tick(self.max_fps)
