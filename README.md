@@ -21,8 +21,5 @@ Controls
 - n - display next generation
 - c - clear grid
 - q - to quit the game 
-
-
-
-
-
+- LMB - pressed or held sets cell alive
+- RMB - pressed or held sets cell dead

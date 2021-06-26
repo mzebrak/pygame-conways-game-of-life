@@ -1,3 +1,4 @@
+from math import floor
 import random
 import sys
 
@@ -6,7 +7,7 @@ import pygame
 
 class GameOfLife:
 
-    def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=5, dead_color=(255, 255, 255),
+    def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=10, dead_color=(255, 255, 255),
                  alive_color=(0, 0, 0), max_fps=20):
         """
         Initialize screen, initialize grid, set game settings, draw first frame
@@ -36,6 +37,8 @@ class GameOfLife:
 
         self.num_of_cols = int(self.screen_width / self.cell_size)
         self.num_of_rows = int((self.screen_height - self.menu_bar_height) / self.cell_size)
+
+        print(f'num of cols: {self.num_of_cols}, num of rows: {self.num_of_rows}')
 
         self.grids = [[[0] * self.num_of_rows for _ in range(self.num_of_cols)],
                       [[0] * self.num_of_rows for _ in range(self.num_of_cols)],
@@ -170,6 +173,17 @@ class GameOfLife:
         """
         self.screen.fill(self.dead_color)
 
+    def get_col_row_by_mouse(self, pos):
+        """
+        A function that gets the tuple (col, row) of the clicked cell
+        :param pos: Position in px where the mouse was when clicked
+        :return: None if clicked below grid otherwise tuple (col, row)
+        """
+        # only if clicked above menu bar (on the grid)
+        if pos[1] < (self.screen_height - self.menu_bar_height):
+            return floor(pos[0] / self.cell_size), floor(pos[1] / self.cell_size)
+        return None
+
     def handle_events(self):
         """
         Handle key presses
@@ -179,6 +193,8 @@ class GameOfLife:
         n - display next generation
         c - clear grid
         q - quit
+        LMB - pressed or held sets cell alive
+        RMB - pressed or held sets cell dead
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -209,6 +225,25 @@ class GameOfLife:
                     self.set_grid(0)
                     self.draw_grid()
                     self.display_info()
+            elif pygame.mouse.get_pressed():
+                try:
+                    col_row = None
+                    # LMB or RMB pressed
+                    if pygame.mouse.get_pressed()[0] or pygame.mouse.get_pressed()[2]:
+                        col_row = self.get_col_row_by_mouse(event.pos)
+
+                    if col_row is not None:
+                        col, row = col_row
+                        if pygame.mouse.get_pressed()[0]:
+                            self.grids[self.active_grid][col][row] = 1
+                        elif pygame.mouse.get_pressed()[2]:
+                            self.grids[self.active_grid][col][row] = 0
+
+                        self.draw_grid()
+                        self.display_info()
+                # when the mouse is pressed down and moved out of the window
+                except AttributeError:
+                    pass
 
     def run(self):
         """
