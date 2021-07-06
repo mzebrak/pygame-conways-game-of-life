@@ -228,15 +228,20 @@ class GameOfLife:
             elif pygame.mouse.get_pressed():
                 try:
                     col_row = None
-                    # LMB or RMB pressed
+                    # LMB [0] or RMB [2] pressed
                     if pygame.mouse.get_pressed()[0] or pygame.mouse.get_pressed()[2]:
                         col_row = self.get_col_row_by_mouse(event.pos)
 
                     if col_row is not None:
                         col, row = col_row
+
                         if pygame.mouse.get_pressed()[0]:
+                            if self.grids[self.active_grid][col][row] == 1:
+                                return
                             self.grids[self.active_grid][col][row] = 1
                         elif pygame.mouse.get_pressed()[2]:
+                            if self.grids[self.active_grid][col][row] == 0:
+                                return
                             self.grids[self.active_grid][col][row] = 0
 
                         self.draw_grid()
@@ -259,5 +264,5 @@ class GameOfLife:
                 self.update_generation()
                 self.draw_grid()
                 self.display_info()
-
-            pygame.time.Clock().tick(self.max_fps)
+                # when paused - the user is able to set or delete cells by mouse with more fps
+                pygame.time.Clock().tick(self.max_fps)
