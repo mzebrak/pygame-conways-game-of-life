@@ -1,3 +1,4 @@
+import os
 from math import floor
 import random
 import sys
@@ -8,7 +9,7 @@ import pygame
 class GameOfLife:
 
     def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=10, dead_color=(255, 255, 255),
-                 alive_color=(0, 0, 0), max_fps=20):
+                 alive_color=(0, 0, 0), max_fps=30):
         """
         Initialize screen, initialize grid, set game settings, draw first frame
 
@@ -31,7 +32,9 @@ class GameOfLife:
         self.cell_size = 1 if cell_size < 1 else cell_size
         self.dead_color = dead_color
         self.alive_color = alive_color
-        self.max_fps = 1 if max_fps < 1 else max_fps
+
+        if not self.max_fps_argv():
+            self.max_fps = 1 if max_fps < 1 else max_fps
 
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
@@ -55,6 +58,21 @@ class GameOfLife:
         self.draw_grid()
         self.display_info()
         pygame.time.Clock().tick(self.max_fps)
+
+    def max_fps_argv(self):
+        """
+        A function that checks if startup arguments are correct and if it is - sets the max_fps
+        :return: True if max_fps was set by startup arguments, and False if was not
+        """
+        print('Number of arguments:', len(sys.argv), 'arguments.')
+        print('Argument List:', str(sys.argv))
+
+        if len(sys.argv) >= 3:
+            if sys.argv[1] == "--max_fps" and sys.argv[2].isnumeric() and int(sys.argv[2]) > 1:
+                self.max_fps = int(sys.argv[2])
+                return True
+
+        return False
 
     def set_grid(self, value=None):
         """
