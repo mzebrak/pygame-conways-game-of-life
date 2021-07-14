@@ -41,11 +41,7 @@ class GameOfLife:
 
         print(f'num of cols: {self.grid_width}, num of rows: {self.grid_height}')
 
-        self.grids = [[[0] * self.grid_height for _ in range(self.grid_width)],
-                      [[0] * self.grid_height for _ in range(self.grid_width)],
-                      ]
-
-        self.active_grid = 0
+        self.grid = [[0] * self.grid_height for _ in range(self.grid_width)]
         self.fill_grid()
 
         self.generation = 0
@@ -62,9 +58,7 @@ class GameOfLife:
 
         :param value:  Value to set the cell to (0 or 1)
         """
-        self.grids[self.active_grid] = [[random.choice([0, 1]) if value is None else value for x in
-                                         self.grids[self.active_grid][0]] for y in
-                                        self.grids[self.active_grid]]
+        self.grid = [[random.choice([0, 1]) if value is None else value for x in self.grid[0]] for y in self.grid]
 
     def draw_grid(self):
         """
@@ -73,7 +67,7 @@ class GameOfLife:
         self.alive_cells = 0
         for c in range(self.grid_width):
             for r in range(self.grid_height):
-                if self.grids[self.active_grid][c][r] == 1:
+                if self.grid[c][r] == 1:
                     self.alive_cells += 1
                     color = BLACK
                 else:
@@ -81,12 +75,6 @@ class GameOfLife:
                 pg.draw.rect(self.screen, color,
                              (c * self.cell_size, r * self.cell_size, self.cell_size, self.cell_size))
         pg.display.flip()
-
-    def get_inactive_grid(self):
-        """
-        :return: The index of the inactive grid
-        """
-        return (self.active_grid + 1) % 2
 
     def count_cell_neighbors(self, col, row):
         """
@@ -102,34 +90,37 @@ class GameOfLife:
             for j in range(-1, 2):
                 c = (col + i + self.grid_width) % self.grid_width
                 r = (row + j + self.grid_height) % self.grid_height
-                num_of_alive_neighbors += self.grids[self.active_grid][c][r]
+                num_of_alive_neighbors += self.grid[c][r]
 
-        num_of_alive_neighbors -= self.grids[self.active_grid][col][row]
+        num_of_alive_neighbors -= self.grid[col][row]
         return num_of_alive_neighbors
 
     def set_cells_state(self):
         """
         Sets the (0/1) state of every cell in the inactive grid depending on the number of neighbors from the active grid
         """
+        temp = []
+
         for c in range(self.grid_width):
+            temp.append([])
+
             for r in range(self.grid_height):
-                state = self.grids[self.active_grid][c][r]
-                inactive = self.get_inactive_grid()
+                state = self.grid[c][r]
                 neighbors = self.count_cell_neighbors(c, r)
 
                 if state == 0 and neighbors == 3:
-                    self.grids[inactive][c][r] = 1
+                    temp[c].append(1)
                 elif state == 1 and neighbors < 2 or neighbors > 3:
-                    self.grids[inactive][c][r] = 0
+                    temp[c].append(0)
                 else:
-                    self.grids[inactive][c][r] = state
+                    temp[c].append(state)
+        self.grid = temp
 
     def update_generation(self):
         """
         Calls function which set the state of every cell then swaps the active and inactive grid and increments generation counter
         """
         self.set_cells_state()
-        self.active_grid = self.get_inactive_grid()
         self.generation += 1
 
     def display_info(self):
@@ -234,13 +225,13 @@ class GameOfLife:
                         col, row = col_row
 
                         if pg.mouse.get_pressed()[0]:
-                            if self.grids[self.active_grid][col][row] == 1:
+                            if self.grid[col][row] == 1:
                                 return
-                            self.grids[self.active_grid][col][row] = 1
+                            self.grid[col][row] = 1
                         elif pg.mouse.get_pressed()[2]:
-                            if self.grids[self.active_grid][col][row] == 0:
+                            if self.grid[col][row] == 0:
                                 return
-                            self.grids[self.active_grid][col][row] = 0
+                            self.grid[col][row] = 0
 
                         self.draw_grid()
                         self.display_info()
