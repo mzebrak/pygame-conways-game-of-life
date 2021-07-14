@@ -1,85 +1,64 @@
-import os
 from math import floor
 import random
 import sys
+import pygame as pg
 
-import pygame
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Game settings
+WIDTH = 640
+HEIGHT = 480
+MENU_HEIGHT = 50
+TITLE = 'conway\'s game of life'
+ICON = 'icon.ico'
 
 
 class GameOfLife:
-
-    def __init__(self, screen_width=640, screen_height=480, menu_height=50, cell_size=10, dead_color=(255, 255, 255),
-                 alive_color=(0, 0, 0), max_fps=30):
+    def __init__(self, cell_size=10, max_fps=20):
         """
         Initialize screen, initialize grid, set game settings, draw first frame
 
-        :param screen_width: Game window width
-        :param screen_height: Game window height
-        :param menu_height: Height for the menu
         :param cell_size: Dimension of the square
-        :param dead_color: RGB tuple determining the color of dead cells and background
-        :param alive_color: RGB tuple determining the color of alive cells
         :param max_fps: Framerate cap to limit the speed of the game
         """
-        pygame.init()
-        favicon = pygame.image.load('favicon.ico')
-        pygame.display.set_icon(favicon)
-        pygame.display.set_caption('conway\'s game of life')
+        pg.init()
+        pg.display.set_icon(pg.image.load(ICON))
+        pg.display.set_caption(TITLE)
 
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.menu_bar_height = menu_height
+        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+        self.clock = pg.time.Clock()
+
         self.cell_size = 1 if cell_size < 1 else cell_size
-        self.dead_color = dead_color
-        self.alive_color = alive_color
+        self.max_fps = 1 if max_fps < 1 else max_fps
 
-        if not self.max_fps_argv():
-            self.max_fps = 1 if max_fps < 1 else max_fps
+        self.new()
 
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+    def new(self):
+        self.grid_width = int(WIDTH / self.cell_size)
+        self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
 
-        self.num_of_cols = int(self.screen_width / self.cell_size)
-        self.num_of_rows = int((self.screen_height - self.menu_bar_height) / self.cell_size)
+        print(f'num of cols: {self.grid_width}, num of rows: {self.grid_height}')
 
-        print(f'num of cols: {self.num_of_cols}, num of rows: {self.num_of_rows}')
-
-        self.grids = [[[0] * self.num_of_rows for _ in range(self.num_of_cols)],
-                      [[0] * self.num_of_rows for _ in range(self.num_of_cols)],
+        self.grids = [[[0] * self.grid_height for _ in range(self.grid_width)],
+                      [[0] * self.grid_height for _ in range(self.grid_width)],
                       ]
+
         self.active_grid = 0
-        self.set_grid()
+        self.fill_grid()
 
         self.generation = 0
         self.alive_cells = 0
-
         self.paused = False
         self.exit = False
 
-        self.draw_grid()
-        self.display_info()
-        pygame.time.Clock().tick(self.max_fps)
-
-    def max_fps_argv(self):
-        """
-        A function that checks if startup arguments are correct and if it is - sets the max_fps
-        :return: True if max_fps was set by startup arguments, and False if was not
-        """
-        print('Number of arguments:', len(sys.argv), 'arguments.')
-        print('Argument List:', str(sys.argv))
-
-        if len(sys.argv) >= 3:
-            if sys.argv[1] == "--max_fps" and sys.argv[2].isnumeric() and int(sys.argv[2]) > 1:
-                self.max_fps = int(sys.argv[2])
-                return True
-
-        return False
-
-    def set_grid(self, value=None):
+    def fill_grid(self, value=None):
         """
         Sets the entire grid to a single specified or random value
-        set_grid(0)                   - all dead
-        set_grid(1)                   - all alive
-        set_grid() or set_grid(None)  - randomize
+        fill_grid(0)                   - all dead
+        fill_grid(1)                   - all alive
+        fill_grid() or fill_grid(None)  - randomize
 
         :param value:  Value to set the cell to (0 or 1)
         """
@@ -92,16 +71,16 @@ class GameOfLife:
         Draw the cells from active grid on the screen
         """
         self.alive_cells = 0
-        for c in range(self.num_of_cols):
-            for r in range(self.num_of_rows):
+        for c in range(self.grid_width):
+            for r in range(self.grid_height):
                 if self.grids[self.active_grid][c][r] == 1:
                     self.alive_cells += 1
-                    color = self.alive_color
+                    color = BLACK
                 else:
-                    color = self.dead_color
-                pygame.draw.rect(self.screen, color,
-                                 (c * self.cell_size, r * self.cell_size, self.cell_size, self.cell_size))
-        pygame.display.flip()
+                    color = WHITE
+                pg.draw.rect(self.screen, color,
+                             (c * self.cell_size, r * self.cell_size, self.cell_size, self.cell_size))
+        pg.display.flip()
 
     def get_inactive_grid(self):
         """
@@ -121,8 +100,8 @@ class GameOfLife:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                c = (col + i + self.num_of_cols) % self.num_of_cols
-                r = (row + j + self.num_of_rows) % self.num_of_rows
+                c = (col + i + self.grid_width) % self.grid_width
+                r = (row + j + self.grid_height) % self.grid_height
                 num_of_alive_neighbors += self.grids[self.active_grid][c][r]
 
         num_of_alive_neighbors -= self.grids[self.active_grid][col][row]
@@ -132,8 +111,8 @@ class GameOfLife:
         """
         Sets the (0/1) state of every cell in the inactive grid depending on the number of neighbors from the active grid
         """
-        for c in range(self.num_of_cols):
-            for r in range(self.num_of_rows):
+        for c in range(self.grid_width):
+            for r in range(self.grid_height):
                 state = self.grids[self.active_grid][c][r]
                 inactive = self.get_inactive_grid()
                 neighbors = self.count_cell_neighbors(c, r)
@@ -163,7 +142,7 @@ class GameOfLife:
         div = 1
 
         while True:
-            font = pygame.font.SysFont("Arial", int(self.menu_bar_height / div))
+            font = pg.font.SysFont("Arial", int(MENU_HEIGHT / div))
 
             text1 = font.render(f'Generation: {self.generation}', True, (0, 0, 0), (255, 255, 255))
             text2 = font.render(f'Alive cells: {self.alive_cells}', True, (0, 0, 0), (255, 255, 255))
@@ -173,23 +152,23 @@ class GameOfLife:
 
             div += 1
 
-            if self.screen_width > text1_rect.width + text2_rect.width:
+            if WIDTH > text1_rect.width + text2_rect.width:
                 break
 
-        text1_rect.topleft = (0, self.screen_height - self.menu_bar_height)
-        text2_rect.topleft = (self.screen_width - text2_rect.width, self.screen_height - self.menu_bar_height)
+        text1_rect.topleft = (0, HEIGHT - MENU_HEIGHT)
+        text2_rect.topleft = (WIDTH - text2_rect.width, HEIGHT - MENU_HEIGHT)
 
-        pygame.draw.rect(self.screen, self.dead_color,
-                         (0, self.screen_height - self.menu_bar_height, self.screen_width, self.menu_bar_height))
+        pg.draw.rect(self.screen, WHITE,
+                     (0, HEIGHT - MENU_HEIGHT, WIDTH, MENU_HEIGHT))
         self.screen.blit(text1, text1_rect)
         self.screen.blit(text2, text2_rect)
-        pygame.display.flip()
+        pg.display.flip()
 
     def clear_screen(self):
         """
         Fill the entire screen with dead_color
         """
-        self.screen.fill(self.dead_color)
+        self.screen.fill(WHITE)
 
     def get_col_row_by_mouse(self, pos):
         """
@@ -198,7 +177,7 @@ class GameOfLife:
         :return: None if clicked below grid otherwise tuple (col, row)
         """
         # only if clicked above menu bar (on the grid)
-        if pos[1] < (self.screen_height - self.menu_bar_height):
+        if pos[1] < (HEIGHT - MENU_HEIGHT):
             return floor(pos[0] / self.cell_size), floor(pos[1] / self.cell_size)
         return None
 
@@ -214,50 +193,51 @@ class GameOfLife:
         LMB - pressed or held sets cell alive
         RMB - pressed or held sets cell dead
         """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_p:
                     print("'p' pressed! - toggling pause")
                     self.paused = not self.paused
-                elif event.key == pygame.K_q:
+                elif event.key == pg.K_q:
                     print("q pressed! - quitting the game")
                     self.exit = True
-                elif event.key == pygame.K_r:
+                elif event.key == pg.K_r:
                     print("'r' pressed! - randomizing grid")
                     self.generation = 0
                     self.alive_cells = 0
-                    self.set_grid()
+                    self.fill_grid()
                     self.draw_grid()
                     self.display_info()
-                elif self.paused and event.key == pygame.K_n:
+                elif self.paused and event.key == pg.K_n:
                     print("'n' pressed! - displaying next generation")
                     self.update_generation()
                     self.draw_grid()
                     self.display_info()
-                elif self.paused and event.key == pygame.K_c:
+                elif self.paused and event.key == pg.K_c:
                     print("'c' pressed! - clearing active grid")
                     self.generation = 0
                     self.alive_cells = 0
-                    self.set_grid(0)
+                    self.fill_grid(0)
                     self.draw_grid()
                     self.display_info()
-            elif pygame.mouse.get_pressed():
+            elif pg.mouse.get_pressed():
                 try:
                     col_row = None
                     # LMB [0] or RMB [2] pressed
-                    if pygame.mouse.get_pressed()[0] or pygame.mouse.get_pressed()[2]:
+                    if pg.mouse.get_pressed()[0] or pg.mouse.get_pressed()[2]:
                         col_row = self.get_col_row_by_mouse(event.pos)
 
                     if col_row is not None:
                         col, row = col_row
 
-                        if pygame.mouse.get_pressed()[0]:
+                        if pg.mouse.get_pressed()[0]:
                             if self.grids[self.active_grid][col][row] == 1:
                                 return
                             self.grids[self.active_grid][col][row] = 1
-                        elif pygame.mouse.get_pressed()[2]:
+                        elif pg.mouse.get_pressed()[2]:
                             if self.grids[self.active_grid][col][row] == 0:
                                 return
                             self.grids[self.active_grid][col][row] = 0
@@ -274,13 +254,21 @@ class GameOfLife:
         """
         while True:
             if self.exit:
+                pg.quit()
                 return
 
             self.handle_events()
 
             if not self.paused:
-                self.update_generation()
+                update = True
+
                 self.draw_grid()
                 self.display_info()
+                self.update_generation()
+
                 # when paused - the user is able to set or delete cells by mouse with more fps
-                pygame.time.Clock().tick(self.max_fps)
+                self.clock.tick(self.max_fps)
+            elif update:
+                self.draw_grid()
+                self.display_info()
+                update = False
