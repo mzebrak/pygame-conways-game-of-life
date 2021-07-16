@@ -11,7 +11,7 @@ GREY = (64, 64, 64)
 
 # Game settings
 WIDTH = 1024
-HEIGHT = 576
+HEIGHT = 200
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
 ICON = 'icon.ico'
@@ -35,7 +35,6 @@ class GameOfLife:
         pg.display.set_caption(TITLE)
 
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
-        self.clock = pg.time.Clock()
 
         self.cell_size = 1 if cell_size < 1 else cell_size
         self.max_fps = 1 if max_fps < 1 else max_fps
@@ -46,26 +45,27 @@ class GameOfLife:
 
     def new(self, randomize: int = 0):
         if randomize == 1:
-            last_width = self.grid_width
-            last_height = self.grid_height
+            cols_before = self.grid_cols
+            rows_before = self.grid_rows
 
-        self.grid_width = int(WIDTH / self.cell_size)
-        self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
+        self.grid_cols = int(WIDTH / self.cell_size)
+        self.grid_rows = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
 
         if randomize == 0:
-            self.grid = [[0] * self.grid_height for _ in range(self.grid_width)]
+            self.grid = [[0] * self.grid_rows for _ in range(self.grid_cols)]
             self.fill_grid()
         elif randomize == 1:
-            self.grid_width = int(WIDTH / self.cell_size)
-            self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
+            temp = [[0] * self.grid_rows for _ in range(self.grid_cols)]
 
-            temp = [[0] * self.grid_height for _ in range(self.grid_width)]
-
-            for c in range(last_width):
-                for r in range(last_height):
+            for c in range(cols_before):
+                for r in range(rows_before):
                     temp[c][r] = self.grid[c][r]
             self.grid = temp
 
+        self.width_margin = int((WIDTH - self.grid_cols * self.cell_size) / 2)
+        self.height_margin = int((HEIGHT - MENU_HEIGHT - self.grid_rows * self.cell_size) / 2)
+
+        self.screen.fill(WHITE)
         self.generation = 0
         self.alive_cells = 0
 
@@ -79,43 +79,38 @@ class GameOfLife:
         :param value:  Value to set the cell to (0 or 1)
         """
         self.generation = 0
-        self.alive_cells = 0
         self.grid = [[random.choice([0, 1]) if value is None else value for x in self.grid[0]] for y in self.grid]
 
-    def draw_grid(self, mid_width, mid_height):
-        width = self.grid_width * self.cell_size + mid_width
-        height = self.grid_height * self.cell_size + mid_height
+    def draw_grid(self):
+        width = self.grid_cols * self.cell_size + self.width_margin
+        height = self.grid_rows * self.cell_size + self.height_margin
 
-        for x in range(0, width, self.cell_size):
-            new_x = x + mid_width
-            pg.draw.line(self.screen, GREY, (new_x, mid_height), (new_x, height))
-        for y in range(0, height, self.cell_size):
-            new_y = y + mid_height
-            pg.draw.line(self.screen, GREY, (mid_width, new_y), (width, new_y))
+        for x in range(self.width_margin, width + self.width_margin, self.cell_size):
+            pg.draw.line(self.screen, GREY, (x, self.height_margin), (x, height))
+
+        for y in range(self.height_margin, height + self.height_margin, self.cell_size):
+            pg.draw.line(self.screen, GREY, (self.width_margin, y), (width, y))
 
     def draw(self):
         """
         Draw the cells from active grid on the screen
         """
         self.alive_cells = 0
-        mid_width = int((WIDTH - self.grid_width * self.cell_size) / 2)
-        mid_height = int((HEIGHT - MENU_HEIGHT - self.grid_height * self.cell_size) / 2)
 
-        pg.draw.rect(self.screen, WHITE, (0, 0, WIDTH, HEIGHT - MENU_HEIGHT))
-
-        for x in range(0, self.grid_width):
-            for y in range(0, self.grid_height):
+        for x in range(0, self.grid_cols):
+            for y in range(0, self.grid_rows):
                 if self.grid[x][y] == 1:
                     self.alive_cells += 1
                     color = BLACK
                 else:
                     color = WHITE
                 pg.draw.rect(self.screen, color,
-                             (x * self.cell_size + mid_width, y * self.cell_size + mid_height, self.cell_size,
+                             (x * self.cell_size + self.width_margin, y * self.cell_size + self.height_margin,
+                              self.cell_size,
                               self.cell_size))
 
         if self.show_grid:
-            self.draw_grid(mid_width, mid_height)
+            self.draw_grid()
         pg.display.flip()
 
     def count_cell_neighbors(self, col, row):
@@ -130,8 +125,8 @@ class GameOfLife:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                c = (col + i + self.grid_width) % self.grid_width
-                r = (row + j + self.grid_height) % self.grid_height
+                c = (col + i + self.grid_cols) % self.grid_cols
+                r = (row + j + self.grid_rows) % self.grid_rows
                 num_of_alive_neighbors += self.grid[c][r]
 
         num_of_alive_neighbors -= self.grid[col][row]
@@ -143,10 +138,10 @@ class GameOfLife:
         """
         temp = []
 
-        for c in range(self.grid_width):
+        for c in range(self.grid_cols):
             temp.append([])
 
-            for r in range(self.grid_height):
+            for r in range(self.grid_rows):
                 state = self.grid[c][r]
                 neighbors = self.count_cell_neighbors(c, r)
 
@@ -169,6 +164,8 @@ class GameOfLife:
         """
         Displaying information about generation and alive cells in the bottom
         """
+        print(f'Generation: {self.generation}, alive cells: {self.alive_cells}')
+
         div = 1
 
         while True:
@@ -207,11 +204,14 @@ class GameOfLife:
         :return: None if clicked below grid otherwise tuple (col, row)
         """
         # only if clicked above menu bar (on the grid)
-        if pos[0] < (self.grid_width * self.cell_size) and pos[1] < (self.grid_height * self.cell_size):
-            return floor(pos[0] / self.cell_size), floor(pos[1] / self.cell_size)
+        if self.width_margin < pos[0] < (self.grid_cols * self.cell_size + self.width_margin):
+            if self.height_margin < pos[1] < (self.grid_rows * self.cell_size + self.height_margin):
+                return floor((pos[0] - self.width_margin) / self.cell_size), floor(
+                    (pos[1] - self.height_margin) / self.cell_size)
         return None
 
-    def quit(self):
+    @staticmethod
+    def quit():
         pg.quit()
         sys.exit()
 
@@ -237,9 +237,8 @@ class GameOfLife:
                 if event.key == pg.K_p:
                     print("'p' pressed! - toggling pause")
                     self.paused = not self.paused
-                    return
                 elif event.key == pg.K_q:
-                    print("q pressed! - quitting the game")
+                    print("'q' pressed! - quitting the game")
                     self.quit()
                 elif event.key == pg.K_r:
                     print("'r' pressed! - randomizing grid")
@@ -265,9 +264,8 @@ class GameOfLife:
                     print("'z' pressed! - cell size decreased")
                     self.cell_size -= 2 if self.cell_size > 5 else 0
                     self.new(randomize=1)
-            elif pg.mouse.get_pressed():
+            elif click := pg.mouse.get_pressed(num_buttons=3):
                 col_row = None
-                click = pg.mouse.get_pressed() or pg.mouse.get_pressed()
 
                 try:
                     col_row = self.get_col_row_by_mouse(event.pos)
@@ -298,14 +296,9 @@ class GameOfLife:
             self.handle_events()
 
             if not self.paused:
-                update = True
                 self.draw()
                 self.display_info()
                 self.update_generation()
 
                 # when paused - the user is able to set or delete cells by mouse with more fps
-                self.clock.tick(self.max_fps)
-            elif update:
-                self.draw()
-                self.display_info()
-                update = False
+                pg.time.Clock().tick(self.max_fps)
