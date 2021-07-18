@@ -15,7 +15,7 @@ HEIGHT = 768
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
 ICON = 'icon.ico'
-CELL_SIZES = cycle([5, 10, 15, 20, 32, 64])
+CELL_SIZES = cycle([4, 8, 16, 32, 64])
 
 # Mouse buttons
 LMB = 0
@@ -26,12 +26,12 @@ FONT = 'calibri'
 
 
 class Cell(pg.sprite.Sprite):
-    def __init__(self, game, cell_size, x, y, ):
+    def __init__(self, game, cell_size, x, y, alive: bool = None):
         super().__init__(game.sprites)
         self.image = pg.Surface([cell_size, cell_size])
         self.rect = self.image.get_rect()
         self.rect.topleft = (x * cell_size, y * cell_size)
-        self.kill()
+        self.revive() if alive else self.kill()
 
     def kill(self, color=WHITE):
         self.alive = False
@@ -43,7 +43,7 @@ class Cell(pg.sprite.Sprite):
 
 
 class GameOfLife:
-    def __init__(self, cell_size=15, max_fps=20):
+    def __init__(self, cell_size=16, max_fps=20):
         """
         Initialize screen, initialize grid, set game settings, draw first frame
 
@@ -54,7 +54,7 @@ class GameOfLife:
         pg.display.set_icon(pg.image.load(ICON))
         pg.display.set_caption(TITLE)
 
-        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pg.display.set_mode([WIDTH, HEIGHT])
 
         self.cell_size = 1 if cell_size < 1 else cell_size
         self.max_fps = 1 if max_fps < 1 else max_fps
@@ -65,12 +65,13 @@ class GameOfLife:
         self.paused = False
         self.show_grid = True
 
-    def new(self, randomize: int = 0):
+    def new(self, action: str = None):
+        """
+        When it is necessary to recreate the grid
+        :param action: 'INCREASED' - when new grid will be smaller, 'DECREASED' - when new grid will be bigger or
+         None/else, just passing it to the create_list function
+        """
         self.sprites = pg.sprite.Group()
-
-        if randomize == 1 or randomize == 2:
-            width_before = self.grid_width
-            height_before = self.grid_height
 
         self.grid_width = int(WIDTH / self.cell_size)
         self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
@@ -78,40 +79,44 @@ class GameOfLife:
         self.margin_x = int((WIDTH - self.grid_width * self.cell_size) / 2)
         self.grid_image = pg.Surface((self.grid_width * self.cell_size + 1, self.grid_height * self.cell_size + 1))
 
-        if randomize == 0:
+        self.create_list(action)
+        self.screen.fill(WHITE)  # when size changed there might be black stripe
+
+    def create_list(self, action):
+        """
+        Creates a list of Cell type objects, depending on the action - the old list could be copied
+        :param action: INCREASED' - when new grid will be smaller, 'DECREASED' - when new grid will be bigger or None/else
+        """
+        if action not in ('DECREASED', 'INCREASED'):
+            # just create new list of cells with random states
             self.cells = []
             for x in range(self.grid_width):
-                self.cells.append([])
-                for y in range(self.grid_height):
-                    self.cells[x].append(Cell(self, self.cell_size, x, y))
-
+                self.cells.append([Cell(self, self.cell_size, x, y) for y in range(self.grid_height)])
             self.fill_grid()
-        else:
-            temp = [[False] * self.grid_height for _ in range(self.grid_width)]
+            return
 
-            if randomize == 1:
-                for x in range(width_before):
-                    for y in range(height_before):
-                        if self.cells[x][y].alive:
-                            temp[x][y] = True
-            elif randomize == 2:
-                for x in range(self.grid_width):
-                    for y in range(self.grid_height):
-                        if self.cells[x][y].alive:
-                            temp[x][y] = True
-
-            self.cells = []
-
+        temp = []
+        if action == 'DECREASED':
+            # copy old (smaller) list to temp, new cells set as dead
             for x in range(self.grid_width):
-                self.cells.append([])
+                temp.append([])
                 for y in range(self.grid_height):
-                    self.cells[x].append(Cell(self, self.cell_size, x, y))
-                    if temp[x][y]:
-                        self.cells[x][y].revive()
+                    if x < len(self.cells) and y < len(self.cells[0]):
+                        temp[x].append(True) if self.cells[x][y].alive else temp[x].append(False)
+                    else:
+                        temp[x].append(False)
+        elif action == 'INCREASED':
+            # copy old (bigger) list to temp (so copy only cells which will fit into the new one) - new lower
+            # (grid_width) and (grid_height)
+            for x in range(self.grid_width):
+                temp.append([True if self.cells[x][y].alive else False for y in range(self.grid_height)])
 
-        self.screen.fill(WHITE)
-        self.generation = 0
-        self.alive_cells = 0
+        self.cells = []
+        for x in range(len(temp)):
+            # create new cells list according to the true/false in temp list
+            self.cells.append(
+                [Cell(self, self.cell_size, x, y, alive=True) if temp[x][y]
+                 else Cell(self, self.cell_size, x, y, alive=False) for y in range(len(temp[0]))])
 
     def calculate_font_size(self):
         sample = "Generation: XXXXXX  Alive cells: XXXXXX"
@@ -131,14 +136,12 @@ class GameOfLife:
         fill_grid(0)                   - all dead
         fill_grid(1)                   - all alive
         fill_grid() or fill_grid(None)  - randomize
-
         :param value:  Value to set the cell to (0 or 1)
         """
         self.generation = 0
 
         for x in range(self.grid_width):
             for y in range(self.grid_height):
-
                 if value is None:
                     if random.choice([0, 1]) == 1:
                         self.cells[x][y].revive()
@@ -150,6 +153,9 @@ class GameOfLife:
                     self.cells[x][y].revive()
 
     def draw_grid(self):
+        """
+        Draw the additional grid/net
+        """
         width = self.grid_width * self.cell_size
         height = self.grid_height * self.cell_size
 
@@ -160,6 +166,9 @@ class GameOfLife:
             pg.draw.line(self.grid_image, GREY, (0, y), (width, y))
 
     def count_alive_cells(self):
+        """
+        Sets the number of cells currently alive
+        """
         total = 0
         for x in range(self.grid_width):
             for y in range(self.grid_height):
@@ -188,6 +197,9 @@ class GameOfLife:
         self.screen.blit(text2, text2_rect)
 
     def draw(self):
+        """
+        A function that draws everything on the screen - sprites, grid and info
+        """
         self.sprites.draw(self.grid_image)
 
         if self.show_grid:
@@ -199,14 +211,12 @@ class GameOfLife:
 
     def count_cell_neighbors(self, col, row):
         """
-        Get the number of alive neighbors of a specific cell from the active grid
-
+        Get the number of alive neighbors of a specific cell
         :param col: The index of the specific cell
         :param row: The index of the specific cell
-        :return: The number of alive neighbors
+        :return: The number of alive neighbors of that cell
         """
         num_of_alive_neighbors = 0
-
         for i in range(-1, 2):
             for j in range(-1, 2):
                 x = (col + i + self.grid_width) % self.grid_width
@@ -220,10 +230,9 @@ class GameOfLife:
 
     def set_cells_state(self):
         """
-        Sets the (0/1) state of every cell in the inactive grid depending on the number of neighbors from the active grid
+        Sets the state of every cell depending on the number of neighbors
         """
         temp = []
-
         for x in range(self.grid_width):
             temp.append([])
 
@@ -238,16 +247,13 @@ class GameOfLife:
                 else:
                     temp[x].append(state)
 
-        for x in range(self.grid_width):
-            for y in range(self.grid_height):
-                if temp[x][y]:
-                    self.cells[x][y].revive()
-                else:
-                    self.cells[x][y].kill()
+        # revive / kill cell depending on the boolean in temp list
+        [[self.cells[x][y].revive() if temp[x][y] else self.cells[x][y].kill() for y in range(self.grid_height)]
+         for x in range(self.grid_width)]
 
     def update_generation(self):
         """
-        Calls function which set the state of every cell then swaps the active and inactive grid and increments generation counter
+        Calls function which set the state of every cell in next generation, then increments the generation counter
         """
         self.set_cells_state()
         self.generation += 1
@@ -256,7 +262,7 @@ class GameOfLife:
         """
         A function that gets the tuple (col, row) of the clicked cell
         :param pos: Position in px where the mouse was when clicked
-        :return: None if clicked below grid otherwise tuple (col, row)
+        :return: (None, None) if clicked not on the grid otherwise tuple (col, row)
         """
         # only if clicked above menu bar (on the grid image)
         if self.margin_x < pos[0] < (self.grid_width * self.cell_size + self.margin_x):
@@ -313,11 +319,11 @@ class GameOfLife:
                 elif event.key == pg.K_x:
                     print("'x' pressed! - cell size increased")
                     self.cell_size += 2 if self.cell_size < 100 else 0
-                    self.new(randomize=2)
+                    self.new(action='INCREASED')
                 elif event.key == pg.K_z:
                     print("'z' pressed! - cell size decreased")
                     self.cell_size -= 2 if self.cell_size > 5 else 0
-                    self.new(randomize=1)
+                    self.new(action='DECREASED')
             elif button := pg.mouse.get_pressed(num_buttons=3):
                 col, row = None, None
 
@@ -350,6 +356,5 @@ class GameOfLife:
             if not self.paused:
                 self.draw()
                 self.update_generation()
-
                 # when paused - the user is able to set or delete cells by mouse with more fps
                 pg.time.Clock().tick(self.max_fps)
