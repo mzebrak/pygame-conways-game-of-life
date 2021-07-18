@@ -11,15 +11,35 @@ GREY = (64, 64, 64)
 
 # Game settings
 WIDTH = 1024
-HEIGHT = 200
+HEIGHT = 768
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
 ICON = 'icon.ico'
-CELL_SIZES = cycle([5, 10, 16, 32, 40])
+CELL_SIZES = cycle([5, 10, 15, 20, 32, 64])
 
 # Mouse buttons
 LMB = 0
 RMB = 2
+
+# Fonts
+FONT = 'calibri'
+
+
+class Cell(pg.sprite.Sprite):
+    def __init__(self, game, cell_size, x, y, ):
+        super().__init__(game.sprites)
+        self.image = pg.Surface([cell_size, cell_size])
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x * cell_size, y * cell_size)
+        self.kill()
+
+    def kill(self, color=WHITE):
+        self.alive = False
+        self.image.fill(color)
+
+    def revive(self, color=BLACK):
+        self.alive = True
+        self.image.fill(color)
 
 
 class GameOfLife:
@@ -40,34 +60,70 @@ class GameOfLife:
         self.max_fps = 1 if max_fps < 1 else max_fps
 
         self.new()
+        self.calculate_font_size()
+
         self.paused = False
         self.show_grid = True
 
     def new(self, randomize: int = 0):
-        if randomize == 1:
-            cols_before = self.grid_cols
-            rows_before = self.grid_rows
+        self.sprites = pg.sprite.Group()
 
-        self.grid_cols = int(WIDTH / self.cell_size)
-        self.grid_rows = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
+        if randomize == 1 or randomize == 2:
+            width_before = self.grid_width
+            height_before = self.grid_height
+
+        self.grid_width = int(WIDTH / self.cell_size)
+        self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
+
+        self.margin_x = int((WIDTH - self.grid_width * self.cell_size) / 2)
+        self.grid_image = pg.Surface((self.grid_width * self.cell_size + 1, self.grid_height * self.cell_size + 1))
 
         if randomize == 0:
-            self.grid = [[0] * self.grid_rows for _ in range(self.grid_cols)]
+            self.cells = []
+            for x in range(self.grid_width):
+                self.cells.append([])
+                for y in range(self.grid_height):
+                    self.cells[x].append(Cell(self, self.cell_size, x, y))
+
             self.fill_grid()
-        elif randomize == 1:
-            temp = [[0] * self.grid_rows for _ in range(self.grid_cols)]
+        else:
+            temp = [[False] * self.grid_height for _ in range(self.grid_width)]
 
-            for c in range(cols_before):
-                for r in range(rows_before):
-                    temp[c][r] = self.grid[c][r]
-            self.grid = temp
+            if randomize == 1:
+                for x in range(width_before):
+                    for y in range(height_before):
+                        if self.cells[x][y].alive:
+                            temp[x][y] = True
+            elif randomize == 2:
+                for x in range(self.grid_width):
+                    for y in range(self.grid_height):
+                        if self.cells[x][y].alive:
+                            temp[x][y] = True
 
-        self.width_margin = int((WIDTH - self.grid_cols * self.cell_size) / 2)
-        self.height_margin = int((HEIGHT - MENU_HEIGHT - self.grid_rows * self.cell_size) / 2)
+            self.cells = []
+
+            for x in range(self.grid_width):
+                self.cells.append([])
+                for y in range(self.grid_height):
+                    self.cells[x].append(Cell(self, self.cell_size, x, y))
+                    if temp[x][y]:
+                        self.cells[x][y].revive()
 
         self.screen.fill(WHITE)
         self.generation = 0
         self.alive_cells = 0
+
+    def calculate_font_size(self):
+        sample = "Generation: XXXXXX  Alive cells: XXXXXX"
+        div = 1
+
+        while True:
+            div += 1
+            self.font = pg.font.SysFont(FONT, int(WIDTH / div))
+            text_width, text_height = self.font.size(sample)
+
+            if text_width < WIDTH and text_height < MENU_HEIGHT:
+                break
 
     def fill_grid(self, value=None):
         """
@@ -79,38 +135,66 @@ class GameOfLife:
         :param value:  Value to set the cell to (0 or 1)
         """
         self.generation = 0
-        self.grid = [[random.choice([0, 1]) if value is None else value for x in self.grid[0]] for y in self.grid]
+
+        for x in range(self.grid_width):
+            for y in range(self.grid_height):
+
+                if value is None:
+                    if random.choice([0, 1]) == 1:
+                        self.cells[x][y].revive()
+                    else:
+                        self.cells[x][y].kill()
+                elif value == 0:
+                    self.cells[x][y].kill()
+                elif value == 1:
+                    self.cells[x][y].revive()
 
     def draw_grid(self):
-        width = self.grid_cols * self.cell_size + self.width_margin
-        height = self.grid_rows * self.cell_size + self.height_margin
+        width = self.grid_width * self.cell_size
+        height = self.grid_height * self.cell_size
 
-        for x in range(self.width_margin, width + self.width_margin, self.cell_size):
-            pg.draw.line(self.screen, GREY, (x, self.height_margin), (x, height))
+        for x in range(0, width, self.cell_size):
+            pg.draw.line(self.grid_image, GREY, (x, 0), (x, height))
 
-        for y in range(self.height_margin, height + self.height_margin, self.cell_size):
-            pg.draw.line(self.screen, GREY, (self.width_margin, y), (width, y))
+        for y in range(0, height, self.cell_size):
+            pg.draw.line(self.grid_image, GREY, (0, y), (width, y))
+
+    def count_alive_cells(self):
+        total = 0
+        for x in range(self.grid_width):
+            for y in range(self.grid_height):
+                if self.cells[x][y].alive:
+                    total += 1
+        self.alive_cells = total
+
+    def draw_info(self):
+        """
+        Displaying information about generation and alive cells
+        """
+        self.count_alive_cells()
+        print(f'Generation: {self.generation}, alive cells: {self.alive_cells}')
+
+        text1 = self.font.render(f'Generation: {self.generation}', True, BLACK, WHITE)
+        text2 = self.font.render(f'Alive cells: {self.alive_cells}', True, BLACK, WHITE)
+
+        text1_rect = text1.get_rect()
+        text2_rect = text2.get_rect()
+
+        text1_rect.topleft = (0, HEIGHT - MENU_HEIGHT + 1)
+        text2_rect.topleft = (WIDTH - text2_rect.width, HEIGHT - MENU_HEIGHT + 1)
+
+        pg.draw.rect(self.screen, WHITE, (0, HEIGHT - MENU_HEIGHT + 1, WIDTH, MENU_HEIGHT))
+        self.screen.blit(text1, text1_rect)
+        self.screen.blit(text2, text2_rect)
 
     def draw(self):
-        """
-        Draw the cells from active grid on the screen
-        """
-        self.alive_cells = 0
-
-        for x in range(0, self.grid_cols):
-            for y in range(0, self.grid_rows):
-                if self.grid[x][y] == 1:
-                    self.alive_cells += 1
-                    color = BLACK
-                else:
-                    color = WHITE
-                pg.draw.rect(self.screen, color,
-                             (x * self.cell_size + self.width_margin, y * self.cell_size + self.height_margin,
-                              self.cell_size,
-                              self.cell_size))
+        self.sprites.draw(self.grid_image)
 
         if self.show_grid:
             self.draw_grid()
+
+        self.screen.blit(self.grid_image, (self.margin_x, 0))
+        self.draw_info()
         pg.display.flip()
 
     def count_cell_neighbors(self, col, row):
@@ -125,11 +209,13 @@ class GameOfLife:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                c = (col + i + self.grid_cols) % self.grid_cols
-                r = (row + j + self.grid_rows) % self.grid_rows
-                num_of_alive_neighbors += self.grid[c][r]
+                x = (col + i + self.grid_width) % self.grid_width
+                y = (row + j + self.grid_height) % self.grid_height
+                if self.cells[x][y].alive:
+                    num_of_alive_neighbors += 1
 
-        num_of_alive_neighbors -= self.grid[col][row]
+        if self.cells[col][row].alive:
+            num_of_alive_neighbors -= 1
         return num_of_alive_neighbors
 
     def set_cells_state(self):
@@ -138,20 +224,26 @@ class GameOfLife:
         """
         temp = []
 
-        for c in range(self.grid_cols):
+        for x in range(self.grid_width):
             temp.append([])
 
-            for r in range(self.grid_rows):
-                state = self.grid[c][r]
-                neighbors = self.count_cell_neighbors(c, r)
+            for y in range(self.grid_height):
+                state = self.cells[x][y].alive
+                neighbors = self.count_cell_neighbors(x, y)
 
                 if state == 0 and neighbors == 3:
-                    temp[c].append(1)
+                    temp[x].append(True)
                 elif state == 1 and neighbors < 2 or neighbors > 3:
-                    temp[c].append(0)
+                    temp[x].append(False)
                 else:
-                    temp[c].append(state)
-        self.grid = temp
+                    temp[x].append(state)
+
+        for x in range(self.grid_width):
+            for y in range(self.grid_height):
+                if temp[x][y]:
+                    self.cells[x][y].revive()
+                else:
+                    self.cells[x][y].kill()
 
     def update_generation(self):
         """
@@ -160,55 +252,17 @@ class GameOfLife:
         self.set_cells_state()
         self.generation += 1
 
-    def display_info(self):
-        """
-        Displaying information about generation and alive cells in the bottom
-        """
-        print(f'Generation: {self.generation}, alive cells: {self.alive_cells}')
-
-        div = 1
-
-        while True:
-            font = pg.font.SysFont("Arial", int(MENU_HEIGHT / div))
-
-            text1 = font.render(f'Generation: {self.generation}', True, (0, 0, 0), (255, 255, 255))
-            text2 = font.render(f'Alive cells: {self.alive_cells}', True, (0, 0, 0), (255, 255, 255))
-
-            text1_rect = text1.get_rect()
-            text2_rect = text2.get_rect()
-
-            div += 1
-
-            if WIDTH > text1_rect.width + text2_rect.width:
-                break
-
-        text1_rect.topleft = (0, HEIGHT - MENU_HEIGHT)
-        text2_rect.topleft = (WIDTH - text2_rect.width, HEIGHT - MENU_HEIGHT)
-
-        pg.draw.rect(self.screen, WHITE,
-                     (0, HEIGHT - MENU_HEIGHT, WIDTH, MENU_HEIGHT))
-        self.screen.blit(text1, text1_rect)
-        self.screen.blit(text2, text2_rect)
-        pg.display.flip()
-
-    def clear_screen(self):
-        """
-        Fill the entire screen with dead_color
-        """
-        self.screen.fill(WHITE)
-
-    def get_col_row_by_mouse(self, pos):
+    def compute_mouse_pos(self, pos):
         """
         A function that gets the tuple (col, row) of the clicked cell
         :param pos: Position in px where the mouse was when clicked
         :return: None if clicked below grid otherwise tuple (col, row)
         """
-        # only if clicked above menu bar (on the grid)
-        if self.width_margin < pos[0] < (self.grid_cols * self.cell_size + self.width_margin):
-            if self.height_margin < pos[1] < (self.grid_rows * self.cell_size + self.height_margin):
-                return floor((pos[0] - self.width_margin) / self.cell_size), floor(
-                    (pos[1] - self.height_margin) / self.cell_size)
-        return None
+        # only if clicked above menu bar (on the grid image)
+        if self.margin_x < pos[0] < (self.grid_width * self.cell_size + self.margin_x):
+            if 0 < pos[1] < (self.grid_height * self.cell_size):
+                return floor((pos[0] - self.margin_x) / self.cell_size), floor(pos[1] / self.cell_size)
+        return None, None
 
     @staticmethod
     def quit():
@@ -264,29 +318,27 @@ class GameOfLife:
                     print("'z' pressed! - cell size decreased")
                     self.cell_size -= 2 if self.cell_size > 5 else 0
                     self.new(randomize=1)
-            elif click := pg.mouse.get_pressed(num_buttons=3):
-                col_row = None
+            elif button := pg.mouse.get_pressed(num_buttons=3):
+                col, row = None, None
 
                 try:
-                    col_row = self.get_col_row_by_mouse(event.pos)
+                    col, row = self.compute_mouse_pos(event.pos)
                 except AttributeError:  # when the mouse is pressed down and moved out of the window
                     pass
 
-                if col_row is None:
+                if not col:
                     continue
 
-                col, row = col_row
-                cell = self.grid[col][row]
+                state = self.cells[col][row].alive
 
-                if click[LMB] and cell == 0:
-                    self.grid[col][row] = 1
-                elif click[RMB] and cell == 1:
-                    self.grid[col][row] = 0
+                if button[LMB] and not state:
+                    self.cells[col][row].revive()
+                elif button[RMB] and state:
+                    self.cells[col][row].kill()
                 else:
                     continue
 
             self.draw()
-            self.display_info()
 
     def run(self):
         """
@@ -297,7 +349,6 @@ class GameOfLife:
 
             if not self.paused:
                 self.draw()
-                self.display_info()
                 self.update_generation()
 
                 # when paused - the user is able to set or delete cells by mouse with more fps
