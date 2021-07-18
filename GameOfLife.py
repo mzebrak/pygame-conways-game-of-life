@@ -15,18 +15,19 @@ HEIGHT = 768
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
 ICON = 'icon.ico'
-CELL_SIZES = cycle([4, 8, 16, 32, 64])
+CELL_SIZES = cycle([8, 16, 32, 64])
+GENS_PER_SEC = 20
 
 # Mouse buttons
 LMB = 0
 RMB = 2
 
-# Fonts
+# Font
 FONT = 'calibri'
 
 
 class Cell(pg.sprite.Sprite):
-    def __init__(self, game, cell_size, x, y, alive: bool = None):
+    def __init__(self, game, cell_size: int, x: int, y: int, alive: bool = None):
         super().__init__(game.sprites)
         self.image = pg.Surface([cell_size, cell_size])
         self.rect = self.image.get_rect()
@@ -43,7 +44,7 @@ class Cell(pg.sprite.Sprite):
 
 
 class GameOfLife:
-    def __init__(self, cell_size=16, max_fps=20):
+    def __init__(self, cell_size=16, max_fps=144):
         """
         Initialize screen, initialize grid, set game settings, draw first frame
 
@@ -53,15 +54,13 @@ class GameOfLife:
         pg.init()
         pg.display.set_icon(pg.image.load(ICON))
         pg.display.set_caption(TITLE)
-
         self.screen = pg.display.set_mode([WIDTH, HEIGHT])
-
         self.cell_size = 1 if cell_size < 1 else cell_size
         self.max_fps = 1 if max_fps < 1 else max_fps
-
         self.new()
         self.calculate_font_size()
-
+        self.new_gen_event = pg.USEREVENT + 1
+        pg.time.set_timer(self.new_gen_event, int(1000 / GENS_PER_SEC))
         self.paused = False
         self.show_grid = True
 
@@ -72,17 +71,15 @@ class GameOfLife:
          None/else, just passing it to the create_list function
         """
         self.sprites = pg.sprite.Group()
-
         self.grid_width = int(WIDTH / self.cell_size)
         self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
-
         self.margin_x = int((WIDTH - self.grid_width * self.cell_size) / 2)
         self.grid_image = pg.Surface((self.grid_width * self.cell_size + 1, self.grid_height * self.cell_size + 1))
-
+        self.gens_per_sec = GENS_PER_SEC
         self.create_list(action)
         self.screen.fill(WHITE)  # when size changed there might be black stripe
 
-    def create_list(self, action):
+    def create_list(self, action: str = None):
         """
         Creates a list of Cell type objects, depending on the action - the old list could be copied
         :param action: INCREASED' - when new grid will be smaller, 'DECREASED' - when new grid will be bigger or None/else
@@ -121,7 +118,6 @@ class GameOfLife:
     def calculate_font_size(self):
         sample = "Generation: XXXXXX  Alive cells: XXXXXX"
         div = 1
-
         while True:
             div += 1
             self.font = pg.font.SysFont(FONT, int(WIDTH / div))
@@ -130,7 +126,7 @@ class GameOfLife:
             if text_width < WIDTH and text_height < MENU_HEIGHT:
                 break
 
-    def fill_grid(self, value=None):
+    def fill_grid(self, value: int = None):
         """
         Sets the entire grid to a single specified or random value
         fill_grid(0)                   - all dead
@@ -139,7 +135,6 @@ class GameOfLife:
         :param value:  Value to set the cell to (0 or 1)
         """
         self.generation = 0
-
         for x in range(self.grid_width):
             for y in range(self.grid_height):
                 if value is None:
@@ -158,7 +153,6 @@ class GameOfLife:
         """
         width = self.grid_width * self.cell_size
         height = self.grid_height * self.cell_size
-
         for x in range(0, width, self.cell_size):
             pg.draw.line(self.grid_image, GREY, (x, 0), (x, height))
 
@@ -181,17 +175,12 @@ class GameOfLife:
         Displaying information about generation and alive cells
         """
         self.count_alive_cells()
-        print(f'Generation: {self.generation}, alive cells: {self.alive_cells}')
-
         text1 = self.font.render(f'Generation: {self.generation}', True, BLACK, WHITE)
         text2 = self.font.render(f'Alive cells: {self.alive_cells}', True, BLACK, WHITE)
-
         text1_rect = text1.get_rect()
         text2_rect = text2.get_rect()
-
         text1_rect.topleft = (0, HEIGHT - MENU_HEIGHT + 1)
         text2_rect.topleft = (WIDTH - text2_rect.width, HEIGHT - MENU_HEIGHT + 1)
-
         pg.draw.rect(self.screen, WHITE, (0, HEIGHT - MENU_HEIGHT + 1, WIDTH, MENU_HEIGHT))
         self.screen.blit(text1, text1_rect)
         self.screen.blit(text2, text2_rect)
@@ -201,15 +190,13 @@ class GameOfLife:
         A function that draws everything on the screen - sprites, grid and info
         """
         self.sprites.draw(self.grid_image)
-
         if self.show_grid:
             self.draw_grid()
-
         self.screen.blit(self.grid_image, (self.margin_x, 0))
         self.draw_info()
         pg.display.flip()
 
-    def count_cell_neighbors(self, col, row):
+    def count_cell_neighbors(self, col: int, row: int) -> int:
         """
         Get the number of alive neighbors of a specific cell
         :param col: The index of the specific cell
@@ -239,7 +226,6 @@ class GameOfLife:
             for y in range(self.grid_height):
                 state = self.cells[x][y].alive
                 neighbors = self.count_cell_neighbors(x, y)
-
                 if state == 0 and neighbors == 3:
                     temp[x].append(True)
                 elif state == 1 and neighbors < 2 or neighbors > 3:
@@ -258,7 +244,7 @@ class GameOfLife:
         self.set_cells_state()
         self.generation += 1
 
-    def compute_mouse_pos(self, pos):
+    def compute_mouse_pos(self, pos: (int, int)):
         """
         A function that gets the tuple (col, row) of the clicked cell
         :param pos: Position in px where the mouse was when clicked
@@ -270,14 +256,8 @@ class GameOfLife:
                 return floor((pos[0] - self.margin_x) / self.cell_size), floor(pos[1] / self.cell_size)
         return None, None
 
-    @staticmethod
-    def quit():
-        pg.quit()
-        sys.exit()
-
-    def handle_events(self):
+    def handle_keys(self, event):
         """
-        Handle key presses
         g - toggle on/off grid
         p - toggle start/stop (pause) the game
         t - switch between cell sizes
@@ -287,64 +267,95 @@ class GameOfLife:
         r - randomize grid
         c - clear grid
         q - quit
+        :param event:
+        """
+        if event.key == pg.K_p:
+            print("'p' pressed! - toggling pause")
+            self.paused = not self.paused
+        elif event.key == pg.K_q:
+            print("'q' pressed! - quitting the game")
+            self.quit()
+        elif event.key == pg.K_r:
+            print("'r' pressed! - randomizing grid")
+            self.fill_grid()
+        elif self.paused and event.key == pg.K_n:
+            print("'n' pressed! - displaying next generation")
+            self.update_generation()
+        elif event.key == pg.K_c:
+            print("'c' pressed! - clearing active grid")
+            self.fill_grid(0)
+        elif event.key == pg.K_t:
+            print("'t' pressed! - changing cell size")
+            self.cell_size = next(CELL_SIZES)
+            self.new()
+        elif event.key == pg.K_g:
+            print("'g' pressed! - toggling grid")
+            self.show_grid = not self.show_grid
+        elif event.key == pg.K_x:
+            print("'x' pressed! - cell size increased")
+            self.cell_size += 2 if self.cell_size <= 98 else 0
+            self.new(action='INCREASED')
+        elif event.key == pg.K_z:
+            print("'z' pressed! - cell size decreased")
+            self.cell_size -= 2 if self.cell_size >= 8 else 0
+            self.new(action='DECREASED')
+        elif event.unicode == ",":
+            print("',' pressed! - generations per second decreased")
+            self.gens_per_sec -= 1
+            pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
+        elif event.unicode == ".":
+            print("'.' pressed! - generations per second increased")
+            self.gens_per_sec += 1
+            pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
+
+    def handle_mouse(self, event, button):
+        """
         LMB - pressed or held sets cell alive
         RMB - pressed or held sets cell dead
+        :param event:
+        :param button:
+        """
+        col, row = None, None
+        try:
+            col, row = self.compute_mouse_pos(event.pos)
+        except AttributeError:  # when the mouse is pressed down and moved out of the window
+            pass
+
+        if not col:
+            return False
+
+        state = self.cells[col][row].alive
+        if button[LMB] and not state:
+            self.cells[col][row].revive()
+        elif button[RMB] and state:
+            self.cells[col][row].kill()
+        else:
+            return False
+        return True
+
+    def handle_events(self):
+        """
+        Handle all of the events
         """
         for event in pg.event.get():
+            if event.type == self.new_gen_event:
+                if not self.paused:
+                    self.draw()
+                    self.update_generation()
             if event.type == pg.QUIT:
                 self.quit()
             if event.type == pg.KEYDOWN:
-                if event.key == pg.K_p:
-                    print("'p' pressed! - toggling pause")
-                    self.paused = not self.paused
-                elif event.key == pg.K_q:
-                    print("'q' pressed! - quitting the game")
-                    self.quit()
-                elif event.key == pg.K_r:
-                    print("'r' pressed! - randomizing grid")
-                    self.fill_grid()
-                elif self.paused and event.key == pg.K_n:
-                    print("'n' pressed! - displaying next generation")
-                    self.update_generation()
-                elif self.paused and event.key == pg.K_c:
-                    print("'c' pressed! - clearing active grid")
-                    self.fill_grid(0)
-                elif event.key == pg.K_t:
-                    print("'t' pressed! - changing cell size")
-                    self.cell_size = next(CELL_SIZES)
-                    self.new()
-                elif event.key == pg.K_g:
-                    print("'g' pressed! - toggling grid")
-                    self.show_grid = not self.show_grid
-                elif event.key == pg.K_x:
-                    print("'x' pressed! - cell size increased")
-                    self.cell_size += 2 if self.cell_size < 100 else 0
-                    self.new(action='INCREASED')
-                elif event.key == pg.K_z:
-                    print("'z' pressed! - cell size decreased")
-                    self.cell_size -= 2 if self.cell_size > 5 else 0
-                    self.new(action='DECREASED')
+                self.handle_keys(event)
             elif button := pg.mouse.get_pressed(num_buttons=3):
-                col, row = None, None
-
-                try:
-                    col, row = self.compute_mouse_pos(event.pos)
-                except AttributeError:  # when the mouse is pressed down and moved out of the window
-                    pass
-
-                if not col:
-                    continue
-
-                state = self.cells[col][row].alive
-
-                if button[LMB] and not state:
-                    self.cells[col][row].revive()
-                elif button[RMB] and state:
-                    self.cells[col][row].kill()
-                else:
+                if not self.handle_mouse(event, button):
                     continue
 
             self.draw()
+
+    @staticmethod
+    def quit():
+        pg.quit()
+        sys.exit()
 
     def run(self):
         """
@@ -352,9 +363,4 @@ class GameOfLife:
         """
         while True:
             self.handle_events()
-
-            if not self.paused:
-                self.draw()
-                self.update_generation()
-                # when paused - the user is able to set or delete cells by mouse with more fps
-                pg.time.Clock().tick(self.max_fps)
+            pg.time.Clock().tick(self.max_fps)
