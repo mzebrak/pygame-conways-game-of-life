@@ -48,6 +48,7 @@ class GameOfLife:
         pg.init()
         pg.display.set_icon(pg.image.load(ICON))
         pg.display.set_caption(TITLE)
+        pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.MOUSEBUTTONDOWN])
         self.screen = pg.display.set_mode([WIDTH, HEIGHT], HWSURFACE | DOUBLEBUF | RESIZABLE)
         self.cell_size = CELL_SIZE if cell_size < 8 else cell_size
         self.fps = FPS if fps < 1 else fps
@@ -143,10 +144,7 @@ class GameOfLife:
         for x in range(self.grid_width):
             for y in range(self.grid_height):
                 if value is None:
-                    if random.choice([0, 1]) == 1:
-                        self.cells[x][y].revive()
-                    else:
-                        self.cells[x][y].kill()
+                    self.cells[x][y].revive() if random.choice([0, 1]) == 1 else self.cells[x][y].kill()
                 elif value == 0:
                     self.cells[x][y].kill()
                 elif value == 1:
@@ -156,53 +154,43 @@ class GameOfLife:
         """
         Draw the additional grid/net
         """
-        width = self.grid_width * self.cell_size
-        height = self.grid_height * self.cell_size
+        width, height = self.grid_width * self.cell_size, self.grid_height * self.cell_size
         for x in range(0, width, self.cell_size):
             pg.draw.line(self.grid_image, GREY, (x, 0), (x, height))
-
         for y in range(0, height, self.cell_size):
             pg.draw.line(self.grid_image, GREY, (0, y), (width, y))
 
-    def draw_info(self):
+    def draw_info(self, color=BLACK, background=WHITE):
         """
         Displaying information about generation and alive cells
         """
+        render = lambda txt: self.font.render(txt, False, color, background)
         self.count_alive_cells()
-        text1 = self.font.render(f'Generation: {self.generation}', False, BLACK, WHITE)
-        text2 = self.font.render(f'Alive cells: {self.alive_cells}', False, BLACK, WHITE)
-        text1_rect = text1.get_rect()
-        text2_rect = text2.get_rect()
-        text1_rect.topleft = (0, HEIGHT - MENU_HEIGHT + 1)
-        text2_rect.topleft = (WIDTH - text2_rect.width, HEIGHT - MENU_HEIGHT + 1)
+        text = render(f'Generation: {self.generation}')
+        text2 = render(f'Alive cells: {self.alive_cells}')
         pg.draw.rect(self.screen, WHITE, (0, HEIGHT - MENU_HEIGHT + 1, WIDTH, MENU_HEIGHT))
-        self.screen.blit(text1, text1_rect)
-        self.screen.blit(text2, text2_rect)
+        self.screen.blits([(text, (0, HEIGHT - MENU_HEIGHT + 1)),
+                           (text2, (WIDTH - text2.get_size()[0], HEIGHT - MENU_HEIGHT + 1))])
 
-    def draw_menu(self):
-        blit_line = lambda pos, text, color=BLACK: \
+    def draw_menu(self, color=BLACK):
+        blit_line = lambda pos, text: \
             self.grid_image.blit(self.font_menu.render(text, False, color), (5, self.f1_line_height * pos))
 
-        menu_bg = pg.Surface((self.f1_menu_width, self.f1_line_height * 17), pg.SRCALPHA)
-        menu_bg.set_alpha(222)
-        menu_bg.fill(WHITE)
+        menu_bg = pg.Surface([self.f1_menu_width, self.f1_line_height * 17], pg.SRCALPHA)
+        menu_bg.fill(WHITE + (222,))
         self.grid_image.blit(menu_bg, (0, 0))
 
-        if DEAD_COLOR == WHITE:
-            color = 'WHITE'
-        elif DEAD_COLOR == LIGHTEST_GREY:
-            color = 'LIGHTEST GREY'
-        elif DEAD_COLOR == LIGHTER_GREY:
-            color = 'LIGHTER GREY'
-        elif DEAD_COLOR == LIGHT_GREY:
-            color = 'LIGHT GREY'
+        color_names = {WHITE: 'WHITE',
+                       LIGHTEST_GREY: 'LIGHTEST GREY',
+                       LIGHTER_GREY: 'LIGHTER GREY',
+                       LIGHT_GREY: 'LIGHT GREY'}
 
         blit_line(0, f'{TITLE}      FPS:{int(self.clock.get_fps())}')
         blit_line(2, f'F1:  show / hide menu')
         blit_line(3, f'g :  show / hide grid ({"shown" if self.show_grid else "hidden"})')
         blit_line(4, f'w :  show / hide route ({"shown" if self.show_route else "hidden"})')
         blit_line(5, f'e :  next color for dead cells')
-        blit_line(6, f'      ({color})')
+        blit_line(6, f'      ({color_names[DEAD_COLOR]})')
         blit_line(7, f'p :  run / pause ({"paused" if self.paused else "running"})')
         blit_line(8, f'r :  randomize grid')
         blit_line(9, f'n :  display next generation')
@@ -219,12 +207,9 @@ class GameOfLife:
         A function that draws everything on the screen - sprites, grid and info
         """
         self.sprites.draw(self.grid_image)
-        if self.show_grid:
-            self.draw_grid()
-        if self.show_menu:
-            self.draw_menu()
+        self.show_grid and self.draw_grid()
+        self.show_menu and self.draw_menu()
         self.screen.blit(self.grid_image, (self.margin_x, 0))
-
         self.draw_info()
         pg.display.flip()
 
@@ -232,31 +217,22 @@ class GameOfLife:
         """
         Sets the number of cells currently alive
         """
-        total = 0
-        for x in range(self.grid_width):
-            for y in range(self.grid_height):
-                if self.cells[x][y].alive:
-                    total += 1
-        self.alive_cells = total
+        self.alive_cells = sum(sum(1 for cell in x if cell.alive) for x in self.cells)
 
-    def count_cell_neighbors(self, col: int, row: int) -> int:
+    def count_cell_neighbors(self, x: int, y: int) -> int:
         """
         Get the number of alive neighbors of a specific cell
-        :param col: The index of the specific cell
-        :param row: The index of the specific cell
+        :param x: The index of the specific cell
+        :param y: The index of the specific cell
         :return: The number of alive neighbors of that cell
         """
-        num_of_alive_neighbors = 0
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                x = (col + i + self.grid_width) % self.grid_width
-                y = (row + j + self.grid_height) % self.grid_height
-                if self.cells[x][y].alive:
-                    num_of_alive_neighbors += 1
-
-        if self.cells[col][row].alive:
-            num_of_alive_neighbors -= 1
-        return num_of_alive_neighbors
+        prev_x = x - 1
+        prev_y = y - 1
+        next_x = (x + 1) % self.grid_width
+        next_y = (y + 1) % self.grid_height
+        return self.cells[prev_x][prev_y].alive + self.cells[prev_x][y].alive + self.cells[prev_x][next_y].alive + \
+               self.cells[x][prev_y].alive + self.cells[x][next_y].alive + \
+               self.cells[next_x][prev_y].alive + self.cells[next_x][y].alive + self.cells[next_x][next_y].alive
 
     def set_cells_state(self):
         """
@@ -417,9 +393,8 @@ class GameOfLife:
             if event.type == pg.QUIT:
                 self.quit()
             elif event.type == pg.VIDEORESIZE:
-                width = 640 if event.w < 640 else event.w
-                height = 360 if event.h < 360 else event.h
-                WIDTH, HEIGHT = width, height
+                WIDTH = 640 if event.w < 640 else event.w
+                HEIGHT = 360 if event.h < 360 else event.h
                 self.screen = pg.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF | RESIZABLE)
                 self.new()
                 self.draw()
