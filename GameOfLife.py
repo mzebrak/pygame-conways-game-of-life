@@ -9,20 +9,32 @@ from pygame import HWSURFACE
 
 
 class Cell(pg.sprite.Sprite):
-    def __init__(self, game, cell_size: int, x: int, y: int, alive: bool = None):
+    def __init__(self, game, cell_size: int, x: int, y: int, color: (int, int, int) = None, alive: bool = None):
         super().__init__(game.sprites)
         self.image = pg.Surface([cell_size, cell_size])
         self.rect = self.image.get_rect()
         self.rect.topleft = (x * cell_size, y * cell_size)
-        self.revive() if alive else self.kill()
+        if color:
+            self.revive(color) if alive else self.kill(color)
+        else:
+            self.revive() if alive else self.kill()
 
     def kill(self, color=WHITE):
         self.alive = False
         self.image.fill(color)
+        self.color = color
 
     def revive(self, color=BLACK):
         self.alive = True
         self.image.fill(color)
+        self.color = color
+
+    def survive(self):
+        r, g, b = self.color
+        b += 5 if b <= 250 else 0
+        r += 5 if r < 100 else 0
+        self.color = (r, g, b)
+        self.image.fill(self.color)
 
 
 class GameOfLife:
@@ -30,7 +42,7 @@ class GameOfLife:
         """
         Initialize screen, initialize grid, set game settings, draw first frame
 
-        :param cell_size: Dimension of the square
+        :param cell_size: Dimensions of the Cell
         :param fps: Framerate cap to limit the speed of the game
         """
         pg.init()
@@ -45,6 +57,7 @@ class GameOfLife:
         self.paused = False
         self.show_grid = True
         self.show_menu = True
+        self.show_route = False
 
     def new(self, action: str = None):
         """
@@ -81,22 +94,21 @@ class GameOfLife:
             for x in range(self.grid_width):
                 temp.append([])
                 for y in range(self.grid_height):
-                    if x < len(self.cells) and y < len(self.cells[0]):
-                        temp[x].append(True) if self.cells[x][y].alive else temp[x].append(False)
-                    else:
-                        temp[x].append(False)
+                    temp[x].append(self.cells[x][y].color) if x < len(self.cells) and y < len(self.cells[0]) \
+                        else temp[x].append(WHITE)
+
         elif action == 'INCREASED':
-            # copy old (bigger) list to temp (so copy only cells which will fit into the new one) - new lower
+            # copy old (bigger) list to temp (so copies only cells which will fit into the new one) - new lower
             # (grid_width) and (grid_height)
             for x in range(self.grid_width):
-                temp.append([True if self.cells[x][y].alive else False for y in range(self.grid_height)])
+                temp.append([self.cells[x][y].color for y in range(self.grid_height)])
 
         self.cells = []
         for x in range(len(temp)):
-            # create new cells list according to the true/false in temp list
+            # create new cells list according to the color tuple/false in temp list
             self.cells.append(
-                [Cell(self, self.cell_size, x, y, alive=True) if temp[x][y]
-                 else Cell(self, self.cell_size, x, y, alive=False) for y in range(len(temp[0]))])
+                [Cell(self, self.cell_size, x, y, alive=True, color=temp[x][y]) if temp[x][y] not in COLORS
+                 else Cell(self, self.cell_size, x, y, alive=False, color=temp[x][y]) for y in range(len(temp[0]))])
 
     def calculate_font_sizes(self):
         text_bottom = 'Generation: XXXXXX  Alive cells: XXXXXX'
@@ -114,7 +126,7 @@ class GameOfLife:
         while True:
             self.font_menu = pg.font.SysFont(FONT_MENU, int(HEIGHT / div))
             self.f1_menu_width, self.f1_line_height = self.font_menu.size(text_help)
-            if self.f1_menu_width < WIDTH / 3 and self.f1_line_height * 14 < HEIGHT * 5 / 8:
+            if self.f1_menu_width < WIDTH / 3 and self.f1_line_height * 17 < HEIGHT * 5 / 8:
                 break
             div += 1
 
@@ -170,24 +182,36 @@ class GameOfLife:
         blit_line = lambda pos, text, color=BLACK: \
             self.grid_image.blit(self.font_menu.render(text, False, color), (5, self.f1_line_height * pos))
 
-        menu_bg = pg.Surface((self.f1_menu_width, self.f1_line_height * 14), pg.SRCALPHA)
+        menu_bg = pg.Surface((self.f1_menu_width, self.f1_line_height * 17), pg.SRCALPHA)
         menu_bg.set_alpha(200)
         menu_bg.fill(WHITE)
         self.grid_image.blit(menu_bg, (0, 0))
 
+        if DEAD_COLOR == WHITE:
+            color = 'WHITE'
+        elif DEAD_COLOR == LIGHTEST_GREY:
+            color = 'LIGHTEST GREY'
+        elif DEAD_COLOR == LIGHTER_GREY:
+            color = 'LIGHTER GREY'
+        elif DEAD_COLOR == LIGHT_GREY:
+            color = 'LIGHT GREY'
+
         blit_line(0, f'{TITLE}')
         blit_line(2, f'F1:  show / hide menu')
-        blit_line(3, f'p :  run / pause {"(paused)" if self.paused else "(running)"}')
-        blit_line(4, f'g :  show / hide grid {"(shown)" if self.show_grid else "(hidden)"}')
-        blit_line(5, f'r :  randomize grid')
-        blit_line(6, f'n :  display next generation')
-        blit_line(7,
+        blit_line(3, f'g :  show / hide grid (shown)')
+        blit_line(4, f'w :  show / hide route ({"shown" if self.show_route else "hidden"})')
+        blit_line(5, f'e :  next color for dead cells')
+        blit_line(6, f'      ({color})')
+        blit_line(7, f'p :  run / pause ({"paused" if self.paused else "running"})')
+        blit_line(8, f'r :  randomize grid')
+        blit_line(9, f'n :  display next generation')
+        blit_line(10,
                   f't :  switch cell sizes {self.grid_width}x{self.grid_height} ({self.grid_width * self.grid_height})')
-        blit_line(8, f'z | x :  adjust cell sizes ({self.cell_size})')
-        blit_line(9, f', | . :  generations per second ({self.gens_per_sec})')
-        blit_line(10, f'LMB :  set cell as alive')
-        blit_line(11, f'RMB :  set cell as dead')
-        blit_line(12, f'q :  quit')
+        blit_line(11, f'z | x :  adjust cell sizes ({self.cell_size})')
+        blit_line(12, f', | . :  generations per second ({self.gens_per_sec})')
+        blit_line(13, f'LMB :  set cell as alive')
+        blit_line(14, f'RMB :  set cell as dead')
+        blit_line(15, f'q :  quit')
 
     def draw(self):
         """
@@ -252,8 +276,13 @@ class GameOfLife:
                     temp[x].append(state)
 
         # revive / kill cell depending on the boolean in temp list
-        [[self.cells[x][y].revive() if temp[x][y] else self.cells[x][y].kill() for y in range(self.grid_height)]
-         for x in range(self.grid_width)]
+        for x in range(self.grid_width):
+            for y in range(self.grid_height):
+                if temp[x][y]:
+                    self.cells[x][y].survive() if self.cells[x][y].alive else self.cells[x][y].revive(BLACK)
+                else:
+                    if self.cells[x][y].alive:
+                        self.cells[x][y].kill(DEAD_COLOR) if self.show_route else self.cells[x][y].kill()
 
     def update_generation(self):
         """
@@ -278,6 +307,8 @@ class GameOfLife:
         """
         g - toggle on/off grid
         p - toggle start/stop (pause) the game
+        w - toggle route view
+        e - next color for dead cells
         t - switch between cell sizes
         z - decrease cell size
         x - increase cell size
@@ -296,6 +327,13 @@ class GameOfLife:
         elif event.key == pg.K_r:
             print("'r' pressed! - randomizing grid")
             self.fill_grid()
+        elif event.key == pg.K_w:
+            print("'w' pressed! - toggling route view")
+            self.show_route = not self.show_route
+        elif event.key == pg.K_e:
+            global DEAD_COLOR
+            print("'e' pressed! - next color for dead cells")
+            DEAD_COLOR = next(COLORS_CYCLE)
         elif self.paused and event.key == pg.K_n:
             print("'n' pressed! - displaying next generation")
             self.update_generation()
@@ -336,6 +374,17 @@ class GameOfLife:
         :param event:
         :param button:
         """
+        if button == WHEEL_UP:
+            print("'WHEEL_UP'! - generations per second increased")
+            self.gens_per_sec += 1 if self.gens_per_sec <= 99 else 0
+            pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
+            return True
+        elif button == WHEEL_DOWN:
+            print("'WHEEL_DOWN'! - generations per second decreased")
+            self.gens_per_sec -= 1 if self.gens_per_sec >= 2 else 0
+            pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
+            return True
+
         col, row = None, None
         try:
             col, row = self.compute_mouse_pos(event.pos)
@@ -373,7 +422,10 @@ class GameOfLife:
                 self.screen = pg.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF | RESIZABLE)
                 self.new()
                 self.draw()
-            if event.type == pg.KEYDOWN:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == 4 or event.button == 5:
+                    self.handle_mouse(event, event.button)
+            elif event.type == pg.KEYDOWN:
                 self.handle_keys(event)
             elif button := pg.mouse.get_pressed(num_buttons=3):
                 if not self.handle_mouse(event, button):
