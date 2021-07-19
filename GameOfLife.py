@@ -51,6 +51,8 @@ class GameOfLife:
         self.screen = pg.display.set_mode([WIDTH, HEIGHT], HWSURFACE | DOUBLEBUF | RESIZABLE)
         self.cell_size = CELL_SIZE if cell_size < 8 else cell_size
         self.fps = FPS if fps < 1 else fps
+        self.clock = pg.time.Clock()
+        self.gens_per_sec = GENS_PER_SEC
         self.new()
         self.new_gen_event = pg.USEREVENT + 1
         pg.time.set_timer(self.new_gen_event, int(1000 / GENS_PER_SEC))
@@ -71,7 +73,6 @@ class GameOfLife:
         self.grid_height = int((HEIGHT - MENU_HEIGHT) / self.cell_size)
         self.margin_x = int((WIDTH - self.grid_width * self.cell_size) / 2)
         self.grid_image = pg.Surface((self.grid_width * self.cell_size + 1, self.grid_height * self.cell_size + 1))
-        self.gens_per_sec = GENS_PER_SEC
         self.create_list(action)
         self.screen.fill(WHITE)  # when size changed there might be black stripe
 
@@ -183,7 +184,7 @@ class GameOfLife:
             self.grid_image.blit(self.font_menu.render(text, False, color), (5, self.f1_line_height * pos))
 
         menu_bg = pg.Surface((self.f1_menu_width, self.f1_line_height * 17), pg.SRCALPHA)
-        menu_bg.set_alpha(200)
+        menu_bg.set_alpha(222)
         menu_bg.fill(WHITE)
         self.grid_image.blit(menu_bg, (0, 0))
 
@@ -196,9 +197,9 @@ class GameOfLife:
         elif DEAD_COLOR == LIGHT_GREY:
             color = 'LIGHT GREY'
 
-        blit_line(0, f'{TITLE}')
+        blit_line(0, f'{TITLE}      FPS:{int(self.clock.get_fps())}')
         blit_line(2, f'F1:  show / hide menu')
-        blit_line(3, f'g :  show / hide grid (shown)')
+        blit_line(3, f'g :  show / hide grid ({"shown" if self.show_grid else "hidden"})')
         blit_line(4, f'w :  show / hide route ({"shown" if self.show_route else "hidden"})')
         blit_line(5, f'e :  next color for dead cells')
         blit_line(6, f'      ({color})')
@@ -444,4 +445,4 @@ class GameOfLife:
         """
         while True:
             self.handle_events()
-            pg.time.Clock().tick(self.fps)
+            self.clock.tick(self.fps)
