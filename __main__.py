@@ -1,3 +1,3 @@
 from GameOfLife import GameOfLife
 
-GameOfLife().run()
+GameOfLife(cell_size=0, fps=0).run()
