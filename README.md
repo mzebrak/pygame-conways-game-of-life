@@ -80,18 +80,18 @@ Be sure to check the features and controls below :smiley:
 
 <br></br>
 
-|             Command            |            Description            |                     Values                     |
-|:------------------------------:|:---------------------------------:|:----------------------------------------------:|
-|               `F1`               | show / hide help menu             |                                                |
-|                `g`               | show / hide additional grid       |                                                |
-|                `w`               | show / hide cells route           |                                                |
-|                `e`               | set the next color for dead cells | WHITE, LIGHTEST_GREY, LIGHTER_GREY, LIGHT_GREY |
-|                `p`               | run / pause the game              |                                                |
-|                `r`               | randomize grid                    |                                                |
-|                `n`               | display next generation           | (use when game is paused)                      |
-|                `t`               | switch between cell sizes         | 8x8, [16x16], 32x32, 64x64   [] - startup      |
-|             `z` \| `x`             | adjust cell sizes by -+ 2         | range between 8 and 100                        |
-| `,` \| `.` OR VIA  THE MOUSE WHEEL | generations per second -+ 1       | range between 1 and 100                        |
-|               `LMB`              | revives the indicated cell        | (can be held for quicker setting)              |
-|               `RMB`              | kills the indicated cell          | (can be held for quicker setting)              |
-|                `q`               | quit the game                     |                                                |
+| Command | Description | Values / Info |
+|:---:|-----|-----|
+| `F1` | show / hide help menu |  |
+| `g` | show / hide additional grid |  |
+| `w` | show / hide cells route  |  |
+| `e` | set the next color for dead cells | WHITE, LIGHTEST_GREY, LIGHTER_GREY, LIGHT_GREY |
+| `p` | run / pause the game |  |
+| `r` | randomize grid |  |
+| `n` | display next generation | (use when game is paused) |
+| `t` | switch between cell sizes | 8x8, [16x16], 32x32, 64x64   [] - startup |
+| `z` \| x | adjust cell sizes by -+ 2 | range between 8 and 100 |
+| `,` \| `.`</br>OR VIA  THE</br>`MOUSE WHEEL` | generations per second -+ 1 | range between 1 and 100 |
+| `LMB` | revives the indicated cell | (can be held for quicker setting) |
+| `RMB` | kills the indicated cell | (can be held for quicker setting) |
+| `q` | quit the game |  |
