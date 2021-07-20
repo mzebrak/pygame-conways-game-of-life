@@ -1,4 +1,15 @@
 from itertools import cycle
+from random import choice
+from sys import exit
+import pygame as pg
+
+# pygame constans
+from pygame import RESIZABLE
+from pygame import DOUBLEBUF
+from pygame import HWSURFACE
+from pygame import QUIT
+from pygame import KEYDOWN
+from pygame import MOUSEBUTTONDOWN
 
 # Colors
 WHITE = (255, 255, 255)
@@ -13,6 +24,7 @@ COLORS_CYCLE = cycle(COLORS)
 DEAD_COLOR = next(COLORS_CYCLE)
 
 # Game settings
+FPS = 144
 WIDTH = 1280
 HEIGHT = 720
 MENU_HEIGHT = 40
@@ -21,8 +33,11 @@ ICON = 'icon.ico'
 
 CELL_SIZES = cycle([16, 32, 64, 8])
 CELL_SIZE = next(CELL_SIZES)
-GENS_PER_SEC = 20
-FPS = 144
+
+START_GENS_PER_SEC = 20
+MIN_GENS_PER_SEC = 1
+MAX_GENS_PER_SEC = 50
+CHANGE_GENS_PER_SEC = 1
 
 # Mouse buttons
 LMB = 0
@@ -30,6 +45,6 @@ RMB = 2
 WHEEL_UP = 4
 WHEEL_DOWN = 5
 
-# Font
+# Fonts
 FONT = 'calibri'
 FONT_MENU = 'arial'
