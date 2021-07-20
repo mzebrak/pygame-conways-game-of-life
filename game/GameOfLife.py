@@ -3,23 +3,26 @@ from Cell import Cell
 
 
 class GameOfLife:
-    def __init__(self, cell_size: int = 0, fps: int = 0):
+    def __init__(self, cell_size: int = 0, fps: int = 0, gens_per_sec: int = 0, width: int = 0, height: int = 0):
         """
         :param cell_size: Dimensions of the Cell
-        :param fps: Framerate cap to limit the speed of the game
+        :param fps: Framerate cap
         """
         pg.init()
         pg.display.set_icon(pg.image.load(ICON))
         pg.display.set_caption(TITLE)
         pg.event.set_allowed([QUIT, KEYDOWN, MOUSEBUTTONDOWN])
-        self.width, self.height = WIDTH, HEIGHT
-        self.screen = pg.display.set_mode([self.width, self.height], HWSURFACE | DOUBLEBUF | RESIZABLE)
-        self.cell_size = CELL_SIZE if cell_size < 8 else cell_size
+        # if width/height was not set by args (default 0) then it will be set from settings, but if it was set from
+        # args - it also check if  the value was greater than minimum else sets min
+        self.width = WIDTH if width == 0 else width if width > MIN_WIDTH else MIN_WIDTH
+        self.height = HEIGHT if height == 0 else height if height > MIN_HEIGHT else MIN_HEIGHT
+        self.cell_size = CELL_SIZE if cell_size < MIN_CELL_SIZE else cell_size
         self.fps = FPS if fps < 1 else fps
+        self.gens_per_sec = START_GENS_PER_SEC if not 1 <= gens_per_sec <= MAX_GENS_PER_SEC else gens_per_sec
+        self.screen = pg.display.set_mode([self.width, self.height], HWSURFACE | DOUBLEBUF | RESIZABLE)
         self.clock = pg.time.Clock()
-        self.gens_per_sec = START_GENS_PER_SEC
         self.new_gen_event = pg.USEREVENT + 1
-        pg.time.set_timer(self.new_gen_event, int(1000 / START_GENS_PER_SEC))
+        pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
         self.new()
         self.paused = False
         self.show_route = False
@@ -341,8 +344,8 @@ class GameOfLife:
             if event.type == QUIT:
                 self.quit()
             elif event.type == pg.VIDEORESIZE:
-                self.width = 640 if event.w < 640 else event.w
-                self.height = 360 if event.h < 360 else event.h
+                self.width = MIN_WIDTH if event.w < MIN_WIDTH else event.w
+                self.height = MIN_HEIGHT if event.h < MIN_HEIGHT else event.h
                 self.screen = pg.display.set_mode((self.width, self.height), HWSURFACE | DOUBLEBUF | RESIZABLE)
                 self.new()
                 self.draw()

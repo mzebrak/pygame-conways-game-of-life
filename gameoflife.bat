@@ -1,2 +1,2 @@
 cd game
-@py __main__.py --max_fps 30
+@py __main__.py -s 16 --gens_per_sec 20
