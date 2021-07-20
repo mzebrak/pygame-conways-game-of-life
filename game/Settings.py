@@ -1,15 +1,8 @@
+import pygame as pg
+from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, QUIT, KEYDOWN, MOUSEBUTTONDOWN
 from itertools import cycle
 from random import choice
 from sys import exit
-import pygame as pg
-
-# pygame constans
-from pygame import RESIZABLE
-from pygame import DOUBLEBUF
-from pygame import HWSURFACE
-from pygame import QUIT
-from pygame import KEYDOWN
-from pygame import MOUSEBUTTONDOWN
 
 # Colors
 WHITE = (255, 255, 255)
@@ -29,7 +22,7 @@ WIDTH = 1280
 HEIGHT = 720
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
-ICON = 'icon.ico'
+ICON = '../icon.ico'
 
 CELL_SIZES = cycle([16, 32, 64, 8])
 CELL_SIZE = next(CELL_SIZES)

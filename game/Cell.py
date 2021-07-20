@@ -1,5 +1,5 @@
-from Settings import *
 import GameOfLife
+from Settings import pg, WHITE, BLACK
 
 
 class Cell(pg.sprite.Sprite):

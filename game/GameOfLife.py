@@ -1,5 +1,5 @@
 from Settings import *
-from Cell import *
+from Cell import Cell
 
 
 class GameOfLife:
