@@ -329,11 +329,11 @@ class GameOfLife:
             self.show_grid = not self.show_grid
         elif event.key == pg.K_x:
             print("'x' pressed! - cell size increased")
-            self.cell_size += 2 if self.cell_size <= 98 else 0
+            self.cell_size += CHANGE_CELL_SIZE if self.cell_size <= (MAX_CELL_SIZE - CHANGE_CELL_SIZE) else 0
             self.new(action='DECREASE')
         elif event.key == pg.K_z:
             print("'z' pressed! - cell size decreased")
-            self.cell_size -= 2 if self.cell_size >= 10 else 0
+            self.cell_size -= CHANGE_CELL_SIZE if self.cell_size >= (MIN_CELL_SIZE + CHANGE_CELL_SIZE) else 0
             self.new(action='INCREASE')
         elif event.key == pg.K_F1:
             print("'F1' pressed! - toggling menu view")
@@ -358,9 +358,8 @@ class GameOfLife:
         LMB - pressed or held sets cell alive
         RMB - pressed or held sets cell dead
         :param event: pygame Event
-        :param button: integer when mouse WHEEL or tuple of booleans if mouse buttons
+        :param button: tuple of booleans
         """
-
         col, row = None, None
         try:
             col, row = self.compute_mouse_pos(event.pos)

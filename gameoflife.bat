@@ -6,4 +6,4 @@ rem '-W', '--width', metavar='INT', type=int, default=WIDTH, help='startup scree
 rem '-H', '--height', metavar='INT', type=int, default=HEIGHT, help='startup screen height, must be greater than MIN_HEIGHT', required=False
 rem '-F', '--file', metavar='PATH', type=str, default=None, help='relative path from __main__ to the folder with the file,  ex. ../patterns/glider.txt', required=False
 cd game
-@py __main__.py -s 16 --gens_per_sec 10 -F "../patterns/pulsar.txt"
+@py __main__.py -s 16 --gens_per_sec 10 -F "../patterns/breeder.txt"
