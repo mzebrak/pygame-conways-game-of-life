@@ -19,9 +19,13 @@ class ArgsParser:
         par.add_argument('-H', '--height', metavar='INT', type=int, default=0,
                          help='startup screen height',
                          required=False)
+        par.add_argument('-F', '--file', metavar='PATH', type=str, default=None,
+                         help='relative path from __main__ to the folder with the file,  ex. ../patterns/glider.txt',
+                         required=False)
         args = vars(par.parse_args())
         self.size = args['size']
         self.fps = args['fps']
         self.gens = args['gens_per_sec']
-        self.w = args['width']
-        self.h = args['height']
+        self.width = args['width']
+        self.height = args['height']
+        self.file = args['file']

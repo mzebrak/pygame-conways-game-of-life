@@ -3,7 +3,8 @@ from Cell import Cell
 
 
 class GameOfLife:
-    def __init__(self, cell_size: int = 0, fps: int = 0, gens_per_sec: int = 0, width: int = 0, height: int = 0):
+    def __init__(self, cell_size: int = 0, fps: int = 0, gens_per_sec: int = 0, width: int = 0, height: int = 0,
+                 file_path: str = None):
         """
         :param cell_size: Length of the side of a square cell (px)
         :param fps: Framerate cap
@@ -29,25 +30,55 @@ class GameOfLife:
         self.new_gen_event = pg.USEREVENT + 1
         pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
         self.dead_color = next(COLORS_CYCLE)
-        self.paused = False
+        self.sprites = self.grid_width = self.grid_height = self.margin_x = self.grid_image = self.cells = \
+            self.generation = self.font_info = self.font_help = self.f1_menu_width = self.f1_line_height = None
         self.show_route = False
         self.show_grid = True
         self.show_menu = True
-        self.sprites = self.grid_width = self.grid_height = self.margin_x = self.grid_image = self.cells = \
-            self.generation = self.font_info = self.font_help = self.f1_menu_width = self.f1_line_height = None
-        self.new()
+        self.paused = True
+        file_path and self.load_from_file(file_path)
+        self.new(file=file_path)
 
-    def new(self, action: str = None):
+    def load_from_file(self, file: str):
+        try:
+            with open(file) as f:
+                content = [line.strip() for line in f]
+        except FileNotFoundError:
+            print(f'File \'{file}\' was not found!')
+            quit()
+        if not all(len(line.strip()) == len(content[0].strip()) for line in content):
+            print(f'Error in loading from file - one of the lines is of a different width than the others!')
+            quit()
+
+        content = list(map(list, zip(*content)))
+        self.generation = 0
+        self.sprites = pg.sprite.Group()
+        self.cell_size = int(min(self.width / len(content), (self.height - MENU_HEIGHT) / len(content[0])))
+        if len(content) > len(content[0]):
+            self.grid_width = len(content)
+            self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
+        else:
+            self.grid_width = int(self.width / self.cell_size)
+            self.grid_height = len(content[0])
+
+        self.cells = [[Cell(self, self.cell_size, x, y, color=BLACK, alive=True)
+                       if x < len(content) and y < len(content[0]) and int(content[x][y])
+                       else Cell(self, self.cell_size, x, y, color=WHITE)
+                       for y in range(self.grid_height)] for x in range(self.grid_width)]
+
+    def new(self, action: str = None, file: str = None):
         """
         Called when it is necessary to recreate the grid
         :param action: This parameter is just passed to the create_list function
+        :param file: path to the pattern file or None
         """
-        self.sprites = pg.sprite.Group()
-        self.grid_width = int(self.width / self.cell_size)
-        self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
+        if not file:
+            self.sprites = pg.sprite.Group()
+            self.grid_width = int(self.width / self.cell_size)
+            self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
+            self.create_list(action)
         self.margin_x = int((self.width - self.grid_width * self.cell_size) / 2)
         self.grid_image = pg.Surface((self.grid_width * self.cell_size + 1, self.grid_height * self.cell_size + 1))
-        self.create_list(action)
         self.calculate_font_sizes()
         self.screen.fill(WHITE)  # when size changed there might be black stripe
 
@@ -60,14 +91,14 @@ class GameOfLife:
         if action == 'DECREASED':
             # extend the existing list by copying cells from the old list and adding new dead cells to the rest of
             # the indexes
-            self.cells = [[Cell(self, self.cell_size, x, y, alive=self.cells[x][y].alive, color=self.cells[x][y].color)
+            self.cells = [[Cell(self, self.cell_size, x, y, color=self.cells[x][y].color, alive=self.cells[x][y].alive)
                            if x < len(self.cells) and y < len(self.cells[0])
-                           else Cell(self, self.cell_size, x, y, alive=False, color=WHITE)
+                           else Cell(self, self.cell_size, x, y, color=WHITE)
                            for y in range(self.grid_height)] for x in range(self.grid_width)]
         elif action == 'INCREASED':
             # copy bigger list to the smaller one (so copies only cells which will fit into the new one) - by new lower
             # indexes - grid_width and grid_height
-            self.cells = [[Cell(self, self.cell_size, x, y, alive=self.cells[x][y].alive, color=self.cells[x][y].color)
+            self.cells = [[Cell(self, self.cell_size, x, y, color=self.cells[x][y].color, alive=self.cells[x][y].alive)
                            for y in range(self.grid_height)] for x in range(self.grid_width)]
         else:
             # just create new list of cells with random states

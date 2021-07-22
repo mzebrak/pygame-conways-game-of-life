@@ -4,12 +4,12 @@ from Settings import pg, WHITE, BLACK
 
 class Cell(pg.sprite.Sprite):
     def __init__(self, game: GameOfLife, cell_size: int, x: int, y: int, color: (int, int, int) = None,
-                 alive: bool = None):
+                 alive: bool = False):
         super().__init__(game.sprites)
         self.image = pg.Surface([cell_size, cell_size])
         self.rect = self.image.get_rect()
         self.rect.topleft = (x * cell_size, y * cell_size)
-        self.alive, self.color = None, None
+        self.alive = self.color = None
 
         if color:
             self.revive(color) if alive else self.kill(color)
