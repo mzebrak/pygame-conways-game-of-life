@@ -1,10 +1,12 @@
+import pygame.time
+
 from Settings import *
 from Cell import Cell
 
 
 class GameOfLife:
-    def __init__(self, cell_size: int = 0, fps: int = 0, gens_per_sec: int = 0, width: int = 0, height: int = 0,
-                 file_path: str = None):
+    def __init__(self, cell_size: int = CELL_SIZE, fps: int = FPS, gens_per_sec: int = START_GENS_PER_SEC,
+                 width: int = WIDTH, height: int = HEIGHT, file_path: str = None):
         """
         :param cell_size: Length of the side of a square cell (px)
         :param fps: Framerate cap
@@ -18,13 +20,11 @@ class GameOfLife:
         pg.display.set_icon(pg.image.load(ICON))
         pg.display.set_caption(TITLE)
         pg.event.set_allowed([QUIT, KEYDOWN, MOUSEBUTTONDOWN])
-        # if width/height was not set by args (default 0) then it will be set from settings, but if it was set from
-        # args - it also check if  the value was greater than minimum else sets min
-        self.width = WIDTH if width == 0 else width if width > MIN_WIDTH else MIN_WIDTH
-        self.height = HEIGHT if height == 0 else height if height > MIN_HEIGHT else MIN_HEIGHT
-        self.cell_size = CELL_SIZE if cell_size < MIN_CELL_SIZE else cell_size
+        self.cell_size = CELL_SIZE if not MIN_CELL_SIZE <= cell_size <= MAX_CELL_SIZE else cell_size
         self.fps = FPS if fps < 1 else fps
-        self.gens_per_sec = START_GENS_PER_SEC if not 1 <= gens_per_sec <= MAX_GENS_PER_SEC else gens_per_sec
+        self.gens_per_sec = START_GENS_PER_SEC if not MIN_GENS_PER_SEC <= gens_per_sec <= MAX_GENS_PER_SEC else gens_per_sec
+        self.width = MIN_WIDTH if width < MIN_WIDTH else width
+        self.height = HEIGHT if height == 0 else height if height > MIN_HEIGHT else MIN_HEIGHT
         self.screen = pg.display.set_mode([self.width, self.height], HWSURFACE | DOUBLEBUF | RESIZABLE)
         self.clock = pg.time.Clock()
         self.new_gen_event = pg.USEREVENT + 1
@@ -40,6 +40,10 @@ class GameOfLife:
         self.new(file=file_path)
 
     def load_from_file(self, file: str):
+        """
+        Load grid from the specified file
+        :param file: relative path to the file
+        """
         try:
             with open(file) as f:
                 content = [line.strip() for line in f]
@@ -54,12 +58,11 @@ class GameOfLife:
         self.generation = 0
         self.sprites = pg.sprite.Group()
         self.cell_size = int(min(self.width / len(content), (self.height - MENU_HEIGHT) / len(content[0])))
-        if len(content) > len(content[0]):
-            self.grid_width = len(content)
-            self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
-        else:
-            self.grid_width = int(self.width / self.cell_size)
-            self.grid_height = len(content[0])
+        if self.cell_size < MIN_CELL_SIZE:
+            print(f'Cell size is too small: \'{self.cell_size}\'. Change minimum value or modify number of rows/cols!')
+            quit()
+        self.grid_width = len(content)
+        self.grid_height = len(content[0])
 
         self.cells = [[Cell(self, self.cell_size, x, y, color=BLACK, alive=True)
                        if x < len(content) and y < len(content[0]) and int(content[x][y])
@@ -85,17 +88,17 @@ class GameOfLife:
     def create_list(self, action: str = None):
         """
         Creates a list of Cell type objects, depending on the action - the old list could be copied
-        :param action: 'INCREASED' (cell_size) - when new grid will be smaller, 'DECREASED' - when new grid will be
+        :param action: 'DECREASE'- when new grid will be smaller, 'INCREASE' - when new grid will be
         bigger or None/else if there si no need to copy Cell states of the old grid.
         """
-        if action == 'DECREASED':
+        if action == 'INCREASE':
             # extend the existing list by copying cells from the old list and adding new dead cells to the rest of
             # the indexes
             self.cells = [[Cell(self, self.cell_size, x, y, color=self.cells[x][y].color, alive=self.cells[x][y].alive)
                            if x < len(self.cells) and y < len(self.cells[0])
                            else Cell(self, self.cell_size, x, y, color=WHITE)
                            for y in range(self.grid_height)] for x in range(self.grid_width)]
-        elif action == 'INCREASED':
+        elif action == 'DECREASE':
             # copy bigger list to the smaller one (so copies only cells which will fit into the new one) - by new lower
             # indexes - grid_width and grid_height
             self.cells = [[Cell(self, self.cell_size, x, y, color=self.cells[x][y].color, alive=self.cells[x][y].alive)
@@ -327,11 +330,11 @@ class GameOfLife:
         elif event.key == pg.K_x:
             print("'x' pressed! - cell size increased")
             self.cell_size += 2 if self.cell_size <= 98 else 0
-            self.new(action='INCREASED')
+            self.new(action='DECREASE')
         elif event.key == pg.K_z:
             print("'z' pressed! - cell size decreased")
             self.cell_size -= 2 if self.cell_size >= 10 else 0
-            self.new(action='DECREASED')
+            self.new(action='INCREASE')
         elif event.key == pg.K_F1:
             print("'F1' pressed! - toggling menu view")
             self.show_menu = not self.show_menu
@@ -386,17 +389,17 @@ class GameOfLife:
             elif event.type == QUIT:
                 self.quit()
             elif event.type == VIDEORESIZE:
+                width_before, height_before = self.width, self.height
                 self.width = MIN_WIDTH if event.w < MIN_WIDTH else event.w
                 self.height = MIN_HEIGHT if event.h < MIN_HEIGHT else event.h
                 self.screen = pg.display.set_mode((self.width, self.height), HWSURFACE | DOUBLEBUF | RESIZABLE)
-                self.new()
-                self.draw()
-            elif event.type == MOUSEBUTTONDOWN:
-                if event.button == WHEEL_DOWN or event.button == WHEEL_UP:
-                    self.handle_mouse_scroll(event.button)
+                (width_before < self.width or height_before < self.height) and self.new(action="INCREASE")
+                (width_before > self.width or height_before > self.grid_height) and self.new(action="DECREASE")
             elif event.type == KEYDOWN:
                 self.handle_keys(event)
             elif button := pg.mouse.get_pressed(num_buttons=3):
+                if event.type == MOUSEBUTTONDOWN and (event.button == WHEEL_DOWN or event.button == WHEEL_UP):
+                    self.handle_mouse_scroll(event.button)
                 if not self.handle_mouse_buttons(event, button):
                     continue
 
