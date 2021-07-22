@@ -1,5 +1,5 @@
 import pygame as pg
-from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, QUIT, KEYDOWN, MOUSEBUTTONDOWN
+from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, VIDEORESIZE, QUIT, KEYDOWN, MOUSEBUTTONDOWN
 from itertools import cycle
 from random import choice
 from sys import exit
@@ -32,7 +32,7 @@ MIN_CELL_SIZE = 8
 
 START_GENS_PER_SEC = 20
 MIN_GENS_PER_SEC = 1
-MAX_GENS_PER_SEC = 50
+MAX_GENS_PER_SEC = 70
 CHANGE_GENS_PER_SEC = 1
 
 # Mouse buttons
