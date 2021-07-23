@@ -1,5 +1,3 @@
-import pygame.time
-
 from Settings import *
 from Cell import Cell
 
