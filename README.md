@@ -41,7 +41,7 @@ Be sure to check the features and controls below :smiley:
 
 ## Configuration
 
-It is possible to run a .bat file with appropriate parameters modifying the program settings If you want to check this
+It is possible to run a .bat file with appropriate parameters modifying the program settings. If you want to check this
 out, just edit the .bat file.
 
 All parameters are optional, but when used, they take priority over the configuration settings in the Settings
@@ -54,7 +54,7 @@ Here are the parameters that can be set:
 | `-h` | `--help` | show the help message and exit |  |
 | `-s` | `--size` | startup size of each cell `(INT x INT)` | between `MIN_CELL_SIZE` and `MAX_CELL_SIZE` |
 | `-f` | `--fps` | set the framerate cap during the game | must be greater or equal `1` |
-| `-g` | `--gens_per_sec` | startup number of generations per sec | between `MIN_GENS_PER_SEC` and `MAX_GENS_PER_SEC` |
+| `-g` | `--gens` | startup number of generations per sec | between `MIN_GENS_PER_SEC` and `MAX_GENS_PER_SEC` |
 | `-W` | `--width` | startup screen width | must be greater than `MIN_WIDTH` |
 | `-H` | `--height` | startup screen height | must be greater than `MIN_HEIGHT` |
 | `-F` | `--file` | relative path from __main__ to the folder with the file | ex. `-F "../patterns/glider.txt"` |
@@ -89,7 +89,7 @@ Here are the parameters that can be set:
 
 ## Features / Controls
 
-> - There is a possibility change the size of the window with the mouse, but the entire grid will be randomized and drawn as new
+> - There is a possibility change the size of the window with the mouse and cell alignment will be the same as before
 > - When decreasing the size of a single cell, the number of cells in the grid increases, but the old cell alignment is retained
 > - By increasing the size of a single cell, their number in the grid decreases, however, the new grid includes all cells relative to the top left corner
 > - It is possible to revive / kill cells with the mouse while the game is not paused, but sometimes it may be necessary to reduce the number of generations per second so that the update does not run too fast

@@ -11,7 +11,7 @@ class ArgsParser:
         par.add_argument('-f', '--fps', metavar='INT', type=int, default=FPS,
                          help='set the framerate cap during the game, must be greater or equal 1',
                          required=False)
-        par.add_argument('-g', '--gens_per_sec', metavar='INT', type=int, default=START_GENS_PER_SEC,
+        par.add_argument('-g', '--gens', metavar='INT', type=int, default=START_GENS_PER_SEC,
                          help='startup number of generations per sec, between MIN_GENS_PER_SEC and MAX_GENS_PER_SEC',
                          required=False)
         par.add_argument('-W', '--width', metavar='INT', type=int, default=WIDTH,
@@ -26,7 +26,7 @@ class ArgsParser:
         args = vars(par.parse_args())
         self.size = args['size']
         self.fps = args['fps']
-        self.gens = args['gens_per_sec']
+        self.gens = args['gens']
         self.width = args['width']
         self.height = args['height']
         self.file = args['file']
