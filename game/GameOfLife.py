@@ -54,7 +54,7 @@ class GameOfLife:
         lengths = [len(row) for row in content]
         max_len = max(lengths)
         for row in content:
-            diff = max_len-len(row)
+            diff = max_len - len(row)
             row.extend([0] * diff) if diff > 0 else 0
 
         content = list(map(list, zip(*content)))

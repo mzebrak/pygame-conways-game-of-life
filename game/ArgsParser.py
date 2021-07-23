@@ -6,7 +6,7 @@ class ArgsParser:
     def __init__(self):
         par = ArgumentParser(description='github.com/m-zebrak implementation of conway\'s game of life')
         par.add_argument('-s', '--size', metavar='INT', type=int, default=CELL_SIZE,
-                         help='startup size of each cell (INT x INT) between  between MIN_CELL_SIZE and MAX_CELL_SIZE',
+                         help='startup size of each cell (INT x INT) between MIN_CELL_SIZE and MAX_CELL_SIZE',
                          required=False)
         par.add_argument('-f', '--fps', metavar='INT', type=int, default=FPS,
                          help='set the framerate cap during the game, must be greater or equal 1',

@@ -41,6 +41,24 @@ Be sure to check the features and controls below :smiley:
 
 ## Configuration
 
+It is possible to run a .bat file with appropriate parameters modifying the program settings If you want to check this
+out, just edit the .bat file.
+
+All parameters are optional, but when used, they take priority over the configuration settings in the Settings
+class.</br></br>
+Example configuration: `@py __main__.py -s 16 --gens_per_sec 10 -W 1280 -H 720 -F "../patterns/spacefiller.txt"`</br>
+Here are the parameters that can be set:
+
+| Shortcut | Parameter | Description | Values |
+|---|---|---|---|
+| `-h` | `--help` | show the help message and exit |  |
+| `-s` | `--size` | startup size of each cell `(INT x INT)` | between `MIN_CELL_SIZE` and `MAX_CELL_SIZE` |
+| `-f` | `--fps` | set the framerate cap during the game | must be greater or equal `1` |
+| `-g` | `--gens_per_sec` | startup number of generations per sec | between `MIN_GENS_PER_SEC` and `MAX_GENS_PER_SEC` |
+| `-W` | `--width` | startup screen width | must be greater than `MIN_WIDTH` |
+| `-H` | `--height` | startup screen height | must be greater than `MIN_HEIGHT` |
+| `-F` | `--file` | relative path from __main__ to the folder with the file | ex. `-F "../patterns/glider.txt"` |
+
 ## Running
 
 1. If you are using <b>Python launcher</b>
