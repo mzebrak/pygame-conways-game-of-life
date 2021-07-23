@@ -46,13 +46,16 @@ class GameOfLife:
         """
         try:
             with open(file) as f:
-                content = [line.strip() for line in f]
+                content = [[int(c) for c in line.strip()] for line in f]
         except FileNotFoundError:
             print(f'File \'{file}\' was not found!')
             quit()
-        if not all(len(line.strip()) == len(content[0].strip()) for line in content):
-            print(f'Error in loading from file - one of the lines is of a different width than the others!')
-            quit()
+
+        lengths = [len(row) for row in content]
+        max_len = max(lengths)
+        for row in content:
+            diff = max_len-len(row)
+            row.extend([0] * diff) if diff > 0 else 0
 
         content = list(map(list, zip(*content)))
         self.generation = 0
@@ -61,11 +64,16 @@ class GameOfLife:
         if self.cell_size < MIN_CELL_SIZE:
             print(f'Cell size is too small: \'{self.cell_size}\'. Change minimum value or modify number of rows/cols!')
             quit()
-        self.grid_width = len(content)
-        self.grid_height = len(content[0])
+
+        self.grid_width = int(self.width / self.cell_size)
+        self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
+        # adding cols and rows to center loaded pattern
+        [content.insert(0, [0] * len(content[0])) for _ in range((self.grid_width - len(content)) // 2)]
+        [[content[x].insert(0, 0) for _ in range((self.grid_height - len(content[-1])) // 2)] for x in
+         range(len(content))]
 
         self.cells = [[Cell(self, self.cell_size, x, y, color=BLACK, alive=True)
-                       if x < len(content) and y < len(content[0]) and int(content[x][y])
+                       if x < len(content) and y < len(content[0]) and content[x][y]
                        else Cell(self, self.cell_size, x, y, color=WHITE)
                        for y in range(self.grid_height)] for x in range(self.grid_width)]
 
@@ -329,12 +337,10 @@ class GameOfLife:
             self.show_grid = not self.show_grid
         elif event.key == pg.K_x:
             print("'x' pressed! - cell size increased")
-            self.cell_size += CHANGE_CELL_SIZE if self.cell_size <= (MAX_CELL_SIZE - CHANGE_CELL_SIZE) else 0
-            self.new(action='DECREASE')
+            self.increase_cell_size()
         elif event.key == pg.K_z:
             print("'z' pressed! - cell size decreased")
-            self.cell_size -= CHANGE_CELL_SIZE if self.cell_size >= (MIN_CELL_SIZE + CHANGE_CELL_SIZE) else 0
-            self.new(action='INCREASE')
+            self.decrease_cell_size()
         elif event.key == pg.K_F1:
             print("'F1' pressed! - toggling menu view")
             self.show_menu = not self.show_menu
@@ -345,13 +351,21 @@ class GameOfLife:
             print("'.' pressed! - generations per second increased")
             self.increase_gens_per_sec()
 
-    def handle_mouse_scroll(self, button: int):
+    def handle_mouse_scroll(self, button: int, zoom: bool = False):
         if button == WHEEL_UP:
-            print("'WHEEL_UP'! - generations per second increased")
-            self.increase_gens_per_sec()
+            if zoom:
+                print("'CTRL' and 'WHEEL_UP'! -cell size increased")
+                self.increase_cell_size()
+            else:
+                print("'WHEEL_UP'! - generations per second increased")
+                self.increase_gens_per_sec()
         elif button == WHEEL_DOWN:
-            print("'WHEEL_DOWN'! - generations per second decreased")
-            self.decrease_gens_per_sec()
+            if zoom:
+                print("'CTRL' and 'WHEEL_DOWN'! -cell size decreased")
+                self.decrease_cell_size()
+            else:
+                print("'WHEEL_DOWN'! - generations per second decreased")
+                self.decrease_gens_per_sec()
 
     def handle_mouse_buttons(self, event: pg.event.Event, button: (bool, bool, bool)) -> bool:
         """
@@ -396,6 +410,10 @@ class GameOfLife:
                 (width_before > self.width or height_before > self.grid_height) and self.new(action="DECREASE")
             elif event.type == KEYDOWN:
                 self.handle_keys(event)
+            elif (keys := pg.key.get_pressed()) and (keys[pg.K_LCTRL] or keys[pg.K_RCTRL]):
+                if event.type == MOUSEBUTTONDOWN and (event.button == WHEEL_DOWN or event.button == WHEEL_UP):
+                    self.handle_mouse_scroll(event.button, zoom=True)
+                    continue
             elif button := pg.mouse.get_pressed(num_buttons=3):
                 if event.type == MOUSEBUTTONDOWN and (event.button == WHEEL_DOWN or event.button == WHEEL_UP):
                     self.handle_mouse_scroll(event.button)
@@ -409,6 +427,14 @@ class GameOfLife:
     def decrease_gens_per_sec(self):
         self.gens_per_sec -= CHANGE_GENS_PER_SEC if self.gens_per_sec >= (MIN_GENS_PER_SEC + CHANGE_GENS_PER_SEC) else 0
         pg.time.set_timer(self.new_gen_event, int(1000 / self.gens_per_sec))
+
+    def increase_cell_size(self):
+        self.cell_size += CHANGE_CELL_SIZE if self.cell_size <= (MAX_CELL_SIZE - CHANGE_CELL_SIZE) else 0
+        self.new(action='DECREASE')
+
+    def decrease_cell_size(self):
+        self.cell_size -= CHANGE_CELL_SIZE if self.cell_size >= (MIN_CELL_SIZE + CHANGE_CELL_SIZE) else 0
+        self.new(action='INCREASE')
 
     @staticmethod
     def quit():
