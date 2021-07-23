@@ -80,18 +80,18 @@ Be sure to check the features and controls below :smiley:
 
 <br></br>
 
-| Command | Description | Values / Info |
+| Command | Description | Values / Info [ ] - startup |
 |:---:|-----|-----|
 | `F1` | show / hide help menu |  |
 | `g` | show / hide additional grid |  |
 | `w` | show / hide cells route  |  |
-| `e` | set the next color for dead cells | WHITE, LIGHTEST_GREY, LIGHTER_GREY, LIGHT_GREY |
+| `e` | set the next color for dead cells | WHITE, [LIGHTEST_GREY], LIGHTER_GREY, LIGHT_GREY |
 | `p` | run / pause the game |  |
 | `r` | randomize grid |  |
 | `n` | display next generation | (use when game is paused) |
-| `t` | switch between cell sizes | 8x8, [16x16], 32x32, 64x64   [] - startup |
-| `z` \| x | adjust cell sizes by -+ 2 | range between 8 and 100 |
-| `,` \| `.`</br>OR VIA  THE</br>`MOUSE WHEEL` | generations per second -+ 1 | range between 1 and 100 |
-| `LMB` | revives the indicated cell | (can be held for quicker setting) |
-| `RMB` | kills the indicated cell | (can be held for quicker setting) |
+| `t` | switch between cell sizes | 8x8, [16x16], 32x32, 64x64 |
+| `z` \| `x` </br>OR VIA</br> `<CTRL>` + `<MOUSE WHEEL>` | adjust cell sizes</br> by -+ val of `CHANGE_CELL_SIZE` | range between `MIN_CELL_SIZE` and `MAX_CELL_SIZE` |
+| `,` \| `.`</br>OR VIA</br>`<MOUSE WHEEL>` | generations per second</br>-+ val of `CHANGE_GENS_PER_SEC` | range between `MIN_GENS_PER_SEC` and `MAX_GENS_PER_SEC` |
+| `<LMB>` | revives the indicated cell | (can be held for quicker setting) |
+| `<RMB>` | kills the indicated cell | (can be held for quicker setting) |
 | `q` | quit the game |  |
