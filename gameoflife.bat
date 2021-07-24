@@ -7,3 +7,4 @@ rem '-H', '--height', metavar='INT', type=int, default=HEIGHT, help='startup scr
 rem '-F', '--file', metavar='PATH', type=str, default=None, help='relative path from __main__ to the folder with the file,  ex. ../patterns/glider.txt', required=False
 cd game
 @py __main__.py -s 16 --gens 10 -F "../patterns/spacefiller.txt"
+pause

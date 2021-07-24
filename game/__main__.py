@@ -3,4 +3,4 @@ from ArgsParser import ArgsParser
 
 args = ArgsParser()
 GameOfLife(cell_size=args.size, fps=args.fps, gens_per_sec=args.gens, width=args.width, height=args.height,
-           file_path=args.file).run()
+           file=args.file).run()

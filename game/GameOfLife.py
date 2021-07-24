@@ -4,7 +4,7 @@ from Cell import Cell
 
 class GameOfLife:
     def __init__(self, cell_size: int = CELL_SIZE, fps: int = FPS, gens_per_sec: int = START_GENS_PER_SEC,
-                 width: int = WIDTH, height: int = HEIGHT, file_path: str = None):
+                 width: int = WIDTH, height: int = HEIGHT, file: str = None):
         """
         :param cell_size: Length of the side of a square cell (px)
         :param fps: Framerate cap
@@ -20,7 +20,8 @@ class GameOfLife:
         pg.event.set_allowed([QUIT, KEYDOWN, MOUSEBUTTONDOWN])
         self.cell_size = CELL_SIZE if not MIN_CELL_SIZE <= cell_size <= MAX_CELL_SIZE else cell_size
         self.fps = FPS if fps < 1 else fps
-        self.gens_per_sec = START_GENS_PER_SEC if not MIN_GENS_PER_SEC <= gens_per_sec <= MAX_GENS_PER_SEC else gens_per_sec
+        self.gens_per_sec = START_GENS_PER_SEC if not MIN_GENS_PER_SEC <= gens_per_sec <= MAX_GENS_PER_SEC \
+            else gens_per_sec
         self.width = MIN_WIDTH if width < MIN_WIDTH else width
         self.height = HEIGHT if height == 0 else height if height > MIN_HEIGHT else MIN_HEIGHT
         self.screen = pg.display.set_mode([self.width, self.height], HWSURFACE | DOUBLEBUF | RESIZABLE)
@@ -34,8 +35,8 @@ class GameOfLife:
         self.show_grid = True
         self.show_menu = True
         self.paused = True
-        file_path and self.load_from_file(file_path)
-        self.new(file=file_path)
+        file and self.load_from_file(file)
+        self.new(file=file)
 
     def load_from_file(self, file: str):
         """
@@ -44,30 +45,29 @@ class GameOfLife:
         """
         try:
             with open(file) as f:
-                content = [[int(c) for c in line.strip()] for line in f]
+                content = [[True if c in ('1', 'o', 'O') else False if c in ('0', '.', '_') else quit(
+                    f"there is an illegal character '{c}' in the '{file}' file") for c in line.strip()] for line in f]
         except FileNotFoundError:
-            print(f'File \'{file}\' was not found!')
-            quit()
+            quit(f"File '{file}' was not found!")
 
         lengths = [len(row) for row in content]
         max_len = max(lengths)
         for row in content:
             diff = max_len - len(row)
-            row.extend([0] * diff) if diff > 0 else 0
+            row.extend([False] * diff) if diff > 0 else None
 
         content = list(map(list, zip(*content)))
         self.generation = 0
         self.sprites = pg.sprite.Group()
         self.cell_size = int(min(self.width / len(content), (self.height - MENU_HEIGHT) / len(content[0])))
         if self.cell_size < MIN_CELL_SIZE:
-            print(f'Cell size is too small: \'{self.cell_size}\'. Change minimum value or modify number of rows/cols!')
-            quit()
+            quit(f"Cell size is too small: '{self.cell_size}' change min: '{MIN_CELL_SIZE} or modify num of rows/cols!")
 
         self.grid_width = int(self.width / self.cell_size)
         self.grid_height = int((self.height - MENU_HEIGHT) / self.cell_size)
         # adding cols and rows to center loaded pattern
-        [content.insert(0, [0] * len(content[0])) for _ in range((self.grid_width - len(content)) // 2)]
-        [[content[x].insert(0, 0) for _ in range((self.grid_height - len(content[-1])) // 2)] for x in
+        [content.insert(0, [False] * len(content[0])) for _ in range((self.grid_width - len(content)) // 2)]
+        [[content[x].insert(0, False) for _ in range((self.grid_height - len(content[-1])) // 2)] for x in
          range(len(content))]
 
         self.cells = [[Cell(self, self.cell_size, x, y, color=BLACK, alive=True)
@@ -309,8 +309,7 @@ class GameOfLife:
             print("'p' pressed! - toggling pause")
             self.paused = not self.paused
         elif event.key == pg.K_q:
-            print("'q' pressed! - quitting the game")
-            self.quit()
+            quit("'q' pressed! - quitting the game")
         elif event.key == pg.K_r:
             print("'r' pressed! - randomizing grid")
             self.fill_grid()
@@ -365,7 +364,7 @@ class GameOfLife:
                 print("'WHEEL_DOWN'! - generations per second decreased")
                 self.decrease_gens_per_sec()
 
-    def handle_mouse_buttons(self, event: pg.event.Event, button: (bool, bool, bool)) -> bool:
+    def handle_mouse_buttons(self, event: pg.event.Event, button: (bool, bool, bool)):
         """
         LMB - pressed or held sets cell alive
         RMB - pressed or held sets cell dead
@@ -379,16 +378,13 @@ class GameOfLife:
             pass
 
         if col is None:
-            return False
+            return
 
         state = self.cells[col][row].alive
         if button[LMB] and not state:
             self.cells[col][row].revive()
         elif button[RMB] and state:
             self.cells[col][row].kill()
-        else:
-            return False
-        return True
 
     def handle_events(self):
         """
@@ -398,7 +394,7 @@ class GameOfLife:
             if event.type == self.new_gen_event and not self.paused:
                 self.update_generation()
             elif event.type == QUIT:
-                self.quit()
+                quit("App window was closed!")
             elif event.type == VIDEORESIZE:
                 width_before, height_before = self.width, self.height
                 self.width = MIN_WIDTH if event.w < MIN_WIDTH else event.w
@@ -415,8 +411,7 @@ class GameOfLife:
             elif button := pg.mouse.get_pressed(num_buttons=3):
                 if event.type == MOUSEBUTTONDOWN and (event.button == WHEEL_DOWN or event.button == WHEEL_UP):
                     self.handle_mouse_scroll(event.button)
-                if not self.handle_mouse_buttons(event, button):
-                    continue
+                self.handle_mouse_buttons(event, button)
 
     def increase_gens_per_sec(self):
         self.gens_per_sec += CHANGE_GENS_PER_SEC if self.gens_per_sec <= (MAX_GENS_PER_SEC - CHANGE_GENS_PER_SEC) else 0
@@ -433,11 +428,6 @@ class GameOfLife:
     def decrease_cell_size(self):
         self.cell_size -= CHANGE_CELL_SIZE if self.cell_size >= (MIN_CELL_SIZE + CHANGE_CELL_SIZE) else 0
         self.new(action='INCREASE')
-
-    @staticmethod
-    def quit():
-        pg.quit()
-        exit()
 
     def run(self):
         """
