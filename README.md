@@ -87,15 +87,15 @@ Here are the parameters that can be set:
     - Then simply run the game by launching:
 
             gameoflife.bat
-   
+
 3. If you want to run this app with your IDE, just run the `__main__.py`
-      
 
 ## Features / Controls
 
 > - In addition to changing the generation per second with the keys, you can use the mouse scroll. While holding down the CTRL key, you can also resize the cell with the scroll.
 > - When reading from a file, a living cell is marked as '1', 'o' or 'O'. In turn, a dead cell can be written as '0', '.' or '_'.</br>
-    <b>Additionally, there is no need to complete the rows with dead cells, because they are completed automatically to align with the longest row.</b>
+    <b>Additionally, there is no need to fully complete the rows with dead cells, because they are completed automatically to align with the longest row.</b></br>
+    If you want the whole line to be filled with dead cells, just hit enter, but make sure the last line contains a character like ' ', '0', '.' or '_'
 > - There is a possibility to change the size of the window with the mouse by stretching the application window and cell alignment will be the same as before.
 > - When decreasing the size of a single cell, the number of cells in the grid increases, but the old cell alignment is retained.
 > - By increasing the size of a single cell, their number in the grid decreases, however, the new grid includes all cells relative to the top left corner.

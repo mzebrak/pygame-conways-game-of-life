@@ -1,3 +1,4 @@
+@echo off
 rem PROGRAM OPTIONS:
 rem '-s', '--size', type=int, default=CELL_SIZE, help='startup size of each cell (INT x INT) between MIN_CELL_SIZE andMAX_CELL_SIZE', required=False
 rem '-f', '--fps', type=int, default=FPS, help='set the framerate cap during the game, must be greater or equal 1', required=False

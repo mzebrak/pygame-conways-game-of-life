@@ -81,7 +81,8 @@ class GameOfLife:
         Create a file to which the current grid will be saved
         :return: name of the created file
         """
-        filename = f"../{datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')}"[:-3] + ".txt"
+        Path(SAVES).mkdir(parents=True, exist_ok=True)
+        filename = SAVES + datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')[:-3] + ".txt"
         with open(filename, 'w') as f:
             for y in range(len(self.cells[0])):
                 for x in range(len(self.cells)):

@@ -2,8 +2,8 @@ import pygame as pg
 from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, VIDEORESIZE, QUIT, KEYDOWN, MOUSEBUTTONDOWN
 from itertools import cycle
 from random import choice
-from sys import exit
 from datetime import datetime
+from pathlib import Path
 
 # Colors
 WHITE = (255, 255, 255)
@@ -25,6 +25,7 @@ MIN_HEIGHT = 360
 MENU_HEIGHT = 40
 TITLE = 'conway\'s game of life'
 ICON = '../icon.ico'
+SAVES = '../saves/'
 
 CELL_SIZES = cycle([16, 32, 64, 8])
 CELL_SIZE = next(CELL_SIZES)
