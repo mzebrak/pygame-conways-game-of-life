@@ -1,3 +1,5 @@
+import time
+
 from Settings import *
 from Cell import Cell
 
@@ -41,7 +43,7 @@ class GameOfLife:
     def load_from_file(self, file: str):
         """
         Load grid from the specified file
-        :param file: relative path to the file
+        :param file: relative path from __main__.py to the file
         """
         try:
             with open(file) as f:
@@ -56,9 +58,8 @@ class GameOfLife:
             diff = max_len - len(row)
             row.extend([False] * diff) if diff > 0 else None
 
-        content = list(map(list, zip(*content)))
-        self.generation = 0
-        self.sprites = pg.sprite.Group()
+        content = list(map(list, zip(*content)))  # from [y][x] to [x][y]
+
         self.cell_size = int(min(self.width / len(content), (self.height - MENU_HEIGHT) / len(content[0])))
         if self.cell_size < MIN_CELL_SIZE:
             quit(f"Cell size is too small: '{self.cell_size}' change min: '{MIN_CELL_SIZE} or modify num of rows/cols!")
@@ -70,10 +71,25 @@ class GameOfLife:
         [[content[x].insert(0, False) for _ in range((self.grid_height - len(content[-1])) // 2)] for x in
          range(len(content))]
 
+        self.generation = 0
+        self.sprites = pg.sprite.Group()
         self.cells = [[Cell(self, self.cell_size, x, y, color=BLACK, alive=True)
                        if x < len(content) and y < len(content[0]) and content[x][y]
                        else Cell(self, self.cell_size, x, y, color=WHITE)
                        for y in range(self.grid_height)] for x in range(self.grid_width)]
+
+    def save_to_file(self) -> str:
+        """
+        Create a file to which the current grid will be saved
+        :return: name of the created file
+        """
+        filename = f"../{datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')}"[:-3] + ".txt"
+        with open(filename, 'w') as f:
+            for y in range(len(self.cells[0])):
+                for x in range(len(self.cells)):
+                    f.write('1' if self.cells[x][y].alive else '.')
+                f.write('\n')
+        return filename
 
     def new(self, action: str = None, file: str = None):
         """
@@ -95,7 +111,7 @@ class GameOfLife:
         """
         Creates a list of Cell type objects, depending on the action - the old list could be copied
         :param action: 'DECREASE'- when new grid will be smaller, 'INCREASE' - when new grid will be
-        bigger or None/else if there si no need to copy Cell states of the old grid.
+                        bigger or None/else if there is no need to copy Cell states of the old grid.
         """
         if action == 'INCREASE':
             # extend the existing list by copying cells from the old list and adding new dead cells to the rest of
@@ -149,7 +165,7 @@ class GameOfLife:
         while True:
             self.font_help = pg.font.SysFont(FONT_MENU, int(self.height / div))
             self.f1_menu_width, self.f1_line_height = self.font_help.size(text_help)
-            if self.f1_menu_width < self.width / 3 and self.f1_line_height * 17 < self.height * 5 / 8:
+            if self.f1_menu_width < self.width / 3 and self.f1_line_height * 18 < self.height * 6 / 8:
                 break
             div += 1
 
@@ -186,7 +202,7 @@ class GameOfLife:
         blit_line = lambda pos, text: \
             menu_bg.blit(self.font_help.render(text, False, color), (5, self.f1_line_height * pos))
 
-        menu_bg = pg.Surface([self.f1_menu_width, self.f1_line_height * 17], pg.SRCALPHA)
+        menu_bg = pg.Surface([self.f1_menu_width, self.f1_line_height * 18], pg.SRCALPHA)
         menu_bg.fill(background)
 
         color_names = {WHITE: 'WHITE',
@@ -201,15 +217,16 @@ class GameOfLife:
         blit_line(5, f'e :  next color for dead cells')
         blit_line(6, f'      ({color_names[self.dead_color]})')
         blit_line(7, f'p :  run / pause ({"paused" if self.paused else "running"})')
-        blit_line(8, f'r :  randomize grid')
-        blit_line(9, f'n :  display next generation')
-        blit_line(10,
+        blit_line(8, f's :  save grid to a file')
+        blit_line(9, f'r :  randomize grid')
+        blit_line(10, f'n :  display next generation')
+        blit_line(11,
                   f't :  switch cell sizes {self.grid_width}x{self.grid_height} ({self.grid_width * self.grid_height})')
-        blit_line(11, f'z | x :  adjust cell sizes ({self.cell_size})')
-        blit_line(12, f', | . :  generations per second ({self.gens_per_sec})')
-        blit_line(13, f'LMB :  set cell as alive')
-        blit_line(14, f'RMB :  set cell as dead')
-        blit_line(15, f'q :  quit')
+        blit_line(12, f'z | x :  adjust cell sizes ({self.cell_size})')
+        blit_line(13, f', | . :  generations per second ({self.gens_per_sec})')
+        blit_line(14, f'LMB :  set cell as alive')
+        blit_line(15, f'RMB :  set cell as dead')
+        blit_line(16, f'q :  quit')
 
         self.grid_image.blit(menu_bg, (0, 0))
 
@@ -292,17 +309,7 @@ class GameOfLife:
 
     def handle_keys(self, event: pg.event.Event):
         """
-        g - toggle on/off grid
-        p - toggle start/stop (pause) the game
-        w - toggle route view
-        e - next color for dead cells
-        t - switch between cell sizes
-        z - decrease cell size
-        x - increase cell size
-        n - display next generation
-        r - randomize grid
-        c - clear grid
-        q - quit
+        This function handles all the events related to the keyboard
         :param event: pygame Event
         """
         if event.key == pg.K_p:
@@ -341,6 +348,8 @@ class GameOfLife:
         elif event.key == pg.K_F1:
             print("'F1' pressed! - toggling menu view")
             self.show_menu = not self.show_menu
+        elif event.key == pg.K_s:
+            print(f"'s' pressed ! - saved to file  '{self.save_to_file()}'")
         elif event.unicode == ",":
             print("',' pressed! - generations per second decreased")
             self.decrease_gens_per_sec()
@@ -349,6 +358,11 @@ class GameOfLife:
             self.increase_gens_per_sec()
 
     def handle_mouse_scroll(self, button: int, zoom: bool = False):
+        """
+        This function handles all the events related to the mouse scroll
+        :param button: scrolling up / down
+        :param zoom: if True then CTRL is also pressed and it should zoom instead of changing gens per sec
+        """
         if button == WHEEL_UP:
             if zoom:
                 print("'CTRL' and 'WHEEL_UP'! -cell size increased")
@@ -366,8 +380,7 @@ class GameOfLife:
 
     def handle_mouse_buttons(self, event: pg.event.Event, button: (bool, bool, bool)):
         """
-        LMB - pressed or held sets cell alive
-        RMB - pressed or held sets cell dead
+        This function handles all the events related to the mouse buttons
         :param event: pygame Event
         :param button: tuple of booleans
         """

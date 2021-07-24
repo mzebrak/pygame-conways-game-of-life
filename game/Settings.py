@@ -3,6 +3,7 @@ from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, VIDEORESIZE, QUIT, KEYDOWN, 
 from itertools import cycle
 from random import choice
 from sys import exit
+from datetime import datetime
 
 # Colors
 WHITE = (255, 255, 255)
