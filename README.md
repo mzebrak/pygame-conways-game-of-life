@@ -1,7 +1,8 @@
 # Conway's Game of Life
 
 My PyGame implementation of Conway's Game of Life.</br>
-Be sure to check the features and controls below :smiley:
+This implementation involves treating all edges of the grid as stitched together yielding a toroidal array.</br>
+Be sure to check all of the features and controls below :smiley:
 
 ## Sections
 
@@ -86,15 +87,21 @@ Here are the parameters that can be set:
     - Then simply run the game by launching:
 
             gameoflife.bat
+   
+3. If you want to run this app with your IDE, just run the `__main__.py`
+      
 
 ## Features / Controls
 
-> - There is a possibility change the size of the window with the mouse and cell alignment will be the same as before
-> - When decreasing the size of a single cell, the number of cells in the grid increases, but the old cell alignment is retained
-> - By increasing the size of a single cell, their number in the grid decreases, however, the new grid includes all cells relative to the top left corner
-> - It is possible to revive / kill cells with the mouse while the game is not paused, but sometimes it may be necessary to reduce the number of generations per second so that the update does not run too fast
-> - Cells that remain in the same place change their color with the number of generations - through purple until they are completely blue
-> - The current settings with the fps counter are displayed in the auxiliary menu available under the F1 button
+> - In addition to changing the generation per second with the keys, you can use the mouse scroll. While holding down the CTRL key, you can also resize the cell with the scroll.
+> - When reading from a file, a living cell is marked as '1', 'o' or 'O'. In turn, a dead cell can be written as '0', '.' or '_'.</br>
+    <b>Additionally, there is no need to complete the rows with dead cells, because they are completed automatically to align with the longest row.</b>
+> - There is a possibility to change the size of the window with the mouse by stretching the application window and cell alignment will be the same as before.
+> - When decreasing the size of a single cell, the number of cells in the grid increases, but the old cell alignment is retained.
+> - By increasing the size of a single cell, their number in the grid decreases, however, the new grid includes all cells relative to the top left corner.
+> - It is possible to revive / kill cells with the mouse while the game is not paused, but sometimes it may be necessary to reduce the number of generations per second so that the update does not run too fast.
+> - Cells that remain in the same place change their color with the number of generations - through purple until they are completely blue.
+> - The current settings with the fps counter are displayed in the auxiliary menu available under the F1 button.
 
 <br></br>
 
@@ -105,6 +112,7 @@ Here are the parameters that can be set:
 | `w` | show / hide cells route  |  |
 | `e` | set the next color for dead cells | WHITE, [LIGHTEST_GREY], LIGHTER_GREY, LIGHT_GREY |
 | `p` | run / pause the game |  |
+| `s` | save current grid to a file |  |
 | `r` | randomize grid |  |
 | `n` | display next generation | (use when game is paused) |
 | `t` | switch between cell sizes | 8x8, [16x16], 32x32, 64x64 |

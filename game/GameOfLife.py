@@ -1,5 +1,3 @@
-import time
-
 from Settings import *
 from Cell import Cell
 
