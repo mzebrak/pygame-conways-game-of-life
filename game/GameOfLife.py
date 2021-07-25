@@ -178,12 +178,14 @@ class GameOfLife:
         self.grid_lines.fill(WHITE + (0,))
         width, height = self.grid_width * self.cell_size, self.grid_height * self.cell_size
 
-        for x in range(0, width + 1, self.cell_size):
-            pg.draw.line(self.grid_lines, color, (x, 0), (x, height))
-            pg.draw.line(self.grid_lines, color, (x + 1, 0), (x + 1, height)) if x > 0 else None
-        for y in range(0, height + 1, self.cell_size):
-            pg.draw.line(self.grid_lines, color, (0, y), (width, y))
-            pg.draw.line(self.grid_lines, color, (0, y + 1), (width, y + 1)) if y > 0 else None
+        pg.draw.lines(self.grid_lines, GREY, True, ((0, 0), (width, 0), (width, height), (0, height)))  # border
+        if color is None:
+            return
+
+        for x in range(self.cell_size, width, self.cell_size):
+            pg.draw.line(self.grid_lines, color, (x, 1), (x, height - 1))
+        for y in range(self.cell_size, height, self.cell_size):
+            pg.draw.line(self.grid_lines, color, (1, y), (width - 1, y))
 
     def draw_info(self, color=BLACK, background=WHITE):
         """
@@ -245,7 +247,7 @@ class GameOfLife:
         A function that draws everything on the screen - sprites, grid, help menu and info
         """
         self.sprites.draw(self.grid_image)
-        self.grid_color and self.grid_image.blit(self.grid_lines, (0, 0))
+        self.grid_image.blit(self.grid_lines, (0, 0))
         self.show_menu and self.draw_menu()
         self.screen.blit(self.grid_image, (self.margin_x, 0))
         self.draw_info()

@@ -36,9 +36,9 @@ Be sure to check all of the features and controls below :smiley:
 
 ## Presentation
 
-![](screenshots/launch_presentation.gif)
+![](gifs/pattern_launched.gif)
 
-![](screenshots/presentation.gif)
+![](gifs/playing.gif)
 
 ## Configuration
 
