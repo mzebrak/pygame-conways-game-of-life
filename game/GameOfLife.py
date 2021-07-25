@@ -217,7 +217,7 @@ class GameOfLife:
                        LIGHTEST_GREY: 'LIGHTEST GREY',
                        LIGHTER_GREY: 'LIGHTER GREY',
                        LIGHT_GREY: 'LIGHT GREY'}
-        grid_colors = {False: 'hidden',
+        grid_colors = {None: 'hidden',
                        GREY: 'GREY',
                        WHITE: 'WHITE'
                        }
