@@ -108,7 +108,7 @@ Here are the parameters that can be set:
 | Command | Description | Values / Info [ ] - startup |
 |:---:|-----|-----|
 | `F1` | show / hide help menu |  |
-| `g` | show / hide additional grid |  |
+| `g` | show / hide additional grid | [GREY], WHITE, HIDDEN |
 | `w` | show / hide cells route  |  |
 | `e` | set the next color for dead cells | WHITE, [LIGHTEST_GREY], LIGHTER_GREY, LIGHT_GREY |
 | `p` | run / pause the game |  |

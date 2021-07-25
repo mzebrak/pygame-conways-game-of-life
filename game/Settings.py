@@ -1,9 +1,12 @@
 import pygame as pg
-from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, VIDEORESIZE, QUIT, KEYDOWN, MOUSEBUTTONDOWN
+from pygame import RESIZABLE, DOUBLEBUF, HWSURFACE, VIDEORESIZE, QUIT, KEYDOWN, MOUSEBUTTONDOWN, SRCALPHA
 from itertools import cycle
 from random import choice
 from datetime import datetime
 from pathlib import Path
+from enum import Enum
+
+Action = Enum('Action', 'INIT, INCREASE, DECREASE, RANDOMIZE, CLEAR')
 
 # Colors
 WHITE = (255, 255, 255)
@@ -13,8 +16,11 @@ LIGHT_GREY = (110, 110, 110)
 GREY = (64, 64, 64)
 BLACK = (0, 0, 0)
 
-COLORS = [LIGHTEST_GREY, LIGHTER_GREY, LIGHT_GREY, WHITE]
-COLORS_CYCLE = cycle(COLORS)
+DEAD_COLORS = [LIGHTEST_GREY, LIGHTER_GREY, LIGHT_GREY, WHITE]
+DEAD_COLOR = cycle(DEAD_COLORS)
+
+GRID_COLORS = [GREY, WHITE, False]
+GRID_COLOR = cycle(GRID_COLORS)
 
 # Game settings
 FPS = 144
